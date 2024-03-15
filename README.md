@@ -1,5 +1,5 @@
 ![burch](https://github.com/Mehovic99/diploma-project-2024/assets/76923830/b77a4441-348e-4264-a320-e6775d5bea15)
-# Anes Mehovic Diploma Project
+<h1 align="center">Anes Mehovic Diploma Project</h1>
 
 ## Introduction
 
@@ -9,5 +9,6 @@ I aim to make my site responsive because it's important that it work well on any
 
 With this site, I'm bringing together the essentials of what makes a blog site work today. It's about letting users post their thoughts, without any filters and having full control over them, while at the same time having the ability to see what other users on the site are up to and how they feel about what other users are doing. But more than that, it's about creating a space that's easy and enjoyable to use. This project lets me apply everything I've learned in web development, focusing on building something that's not just functional but also has applications in the real world and has the potential to be sold as either an internal blog tool or as a sponsored site such as Klix.ba in Bosnia
 
-ER Diagram
+# ER Diagram
 
+![ER Diagram Blog](https://github.com/Mehovic99/diploma-project-2024/assets/76923830/efd6326e-7789-4e31-9614-71c2882e07f8)
