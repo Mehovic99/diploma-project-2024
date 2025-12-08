@@ -6,6 +6,7 @@ use App\Contracts\Repositories\PostRepositoryInterface;
 use App\Models\Post;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Str;
 
 class PostRepository implements PostRepositoryInterface
 {
@@ -43,6 +44,7 @@ class PostRepository implements PostRepositoryInterface
             $post->news_source_id = $data['news_source_id'];
         }
 
+        $post->slug = Str::slug($data['title']) . '-' . Str::random(6);
         $post->save();
 
         return $post->fresh();
@@ -54,6 +56,10 @@ class PostRepository implements PostRepositoryInterface
 
         if (array_key_exists('news_source_id', $data)) {
             $post->news_source_id = $data['news_source_id'];
+        }
+
+        if (array_key_exists('title', $data)) {
+            $post->slug = Str::slug($data['title']) . '-' . Str::random(6);
         }
 
         $post->save();
