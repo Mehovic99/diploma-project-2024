@@ -46,4 +46,9 @@ class ReportRepository implements ReportRepositoryInterface
 
         return $report->fresh();
     }
+
+    public function findById(int $id): ?Report
+    {
+        return $this->report->newQuery()->find($id);
+    }
 }

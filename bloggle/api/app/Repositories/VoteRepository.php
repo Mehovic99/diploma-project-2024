@@ -16,7 +16,7 @@ class VoteRepository implements VoteRepositoryInterface
     {
     }
 
-    public function vote(User $user, Model $votable, int $value): Vote
+    public function vote(User $user, Model $votable, int $value): ?Vote
     {
         if (!in_array($value, [-1, 1], true)) {
             throw new InvalidArgumentException('Vote value must be -1 or 1.');
@@ -27,14 +27,16 @@ class VoteRepository implements VoteRepositoryInterface
 
             if ($existing !== null) {
                 if ($existing->value === $value) {
-                    return $existing;
+                    $this->removeVote($existing, $votable);
+
+                    return null;
                 }
 
                 $scoreDelta = $value - $existing->value;
                 $existing->value = $value;
                 $existing->save();
 
-                $this->applyScoreChange($votable, $scoreDelta, false);
+                $this->applyScoreChange($votable, $scoreDelta);
 
                 return $existing;
             }
@@ -59,14 +61,28 @@ class VoteRepository implements VoteRepositoryInterface
             ->first();
     }
 
-    private function applyScoreChange(Model $votable, int $delta, bool $isNewVote): void
+    private function applyScoreChange(Model $votable, int $delta, bool $isNewVote = false, bool $isRemoval = false): void
     {
-        if ($delta !== 0) {
+        if ($delta > 0) {
             $votable->increment('score', $delta);
+        } elseif ($delta < 0) {
+            $votable->decrement('score', abs($delta));
         }
 
-        if ($isNewVote && $votable instanceof Post) {
-            $votable->increment('votes_count');
+        if ($votable instanceof Post) {
+            if ($isNewVote) {
+                $votable->increment('votes_count');
+            } elseif ($isRemoval) {
+                $votable->decrement('votes_count');
+            }
         }
+    }
+
+    private function removeVote(Vote $vote, Model $votable): void
+    {
+        $voteValue = $vote->value;
+        $vote->delete();
+
+        $this->applyScoreChange($votable, -$voteValue, false, true);
     }
 }

@@ -16,4 +16,6 @@ interface CommentRepositoryInterface
     public function update(Comment $comment, array $data): Comment;
 
     public function adjustScore(Comment $comment, int $delta): void;
+
+    public function findById(int $id): ?Comment;
 }

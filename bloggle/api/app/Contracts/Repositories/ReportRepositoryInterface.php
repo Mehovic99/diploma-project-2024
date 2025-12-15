@@ -14,4 +14,6 @@ interface ReportRepositoryInterface
     public function createFor(Model $reportable, User $reporter, ?string $reason): Report;
 
     public function resolve(Report $report, User $resolver, string $status): Report;
+
+    public function findById(int $id): ?Report;
 }

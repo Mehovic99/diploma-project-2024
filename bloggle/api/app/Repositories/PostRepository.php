@@ -23,6 +23,16 @@ class PostRepository implements PostRepositoryInterface
             ->paginate($perPage);
     }
 
+    public function paginateNews(int $perPage = 20): LengthAwarePaginator
+    {
+        return $this->post->newQuery()
+            ->where('type', 'news')
+            ->where('status', 'published')
+            ->orderByDesc('published_at')
+            ->orderByDesc('created_at')
+            ->paginate($perPage);
+    }
+
     public function findById(int $id): ?Post
     {
         return $this->post->newQuery()->find($id);

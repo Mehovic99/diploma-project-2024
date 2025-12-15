@@ -10,6 +10,8 @@ interface PostRepositoryInterface
 {
     public function paginateFeed(int $perPage = 20): LengthAwarePaginator;
 
+    public function paginateNews(int $perPage = 20): LengthAwarePaginator;
+
     public function findById(int $id): ?Post;
 
     public function findBySlug(string $slug): ?Post;

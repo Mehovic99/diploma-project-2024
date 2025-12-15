@@ -34,6 +34,7 @@ class CommentRepository implements CommentRepositoryInterface
         }
 
         $comment->save();
+        $post->increment('comments_count');
 
         return $comment->fresh();
     }
@@ -53,5 +54,10 @@ class CommentRepository implements CommentRepositoryInterface
         }
 
         $comment->increment('score', $delta);
+    }
+
+    public function findById(int $id): ?Comment
+    {
+        return $this->comment->newQuery()->find($id);
     }
 }

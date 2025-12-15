@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 interface VoteRepositoryInterface
 {
-    public function vote(User $user, Model $votable, int $value): Vote;
+    public function vote(User $user, Model $votable, int $value): ?Vote;
 
     public function findUserVoteFor(User $user, Model $votable): ?Vote;
 }
