@@ -8,9 +8,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OAuthIdentity extends Model
 {
+    protected $table = 'oauth_identities';
+
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
         'provider',
         'provider_user_id',
         'access_token',

@@ -21,11 +21,23 @@ class AuthController extends Controller
         }
     }
 
+    protected function providerScopes(string $provider): array
+    {
+        return match ($provider) {
+            'google' => ['openid', 'email', 'profile'],
+            'facebook' => ['email', 'public_profile'],
+            default => [],
+        };
+    }
+
     public function redirectToProvider(string $provider): RedirectResponse
     {
         $this->ensureSupportedProvider($provider);
 
-        return Socialite::driver($provider)->redirect();
+        return Socialite::driver($provider)
+            ->stateless()
+            ->scopes($this->providerScopes($provider))
+            ->redirect();
     }
 
     public function handleProviderCallback(string $provider): JsonResponse
@@ -36,6 +48,9 @@ class AuthController extends Controller
 
         $providerUserId = $socialUser->getId();
         $email = $socialUser->getEmail();
+        if (! $email) {
+            return response()->json(['message' => 'Email is required from provider'], 422);
+        }
         $name = $socialUser->getName() ?: ($email ?: 'User');
 
         $oauthIdentity = OAuthIdentity::where('provider', $provider)
