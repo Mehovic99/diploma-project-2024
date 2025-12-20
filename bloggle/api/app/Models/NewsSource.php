@@ -21,7 +21,7 @@ class NewsSource extends Model
     ];
 
     protected $casts = [
-        'is_active' => 'bool',
+        'is_active' => 'boolean',
         'last_crawled_at' => 'datetime',
     ];
 
