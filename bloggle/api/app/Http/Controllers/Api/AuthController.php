@@ -5,12 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\OAuthIdentity;
 use App\Models\User;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
-use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class AuthController extends Controller
 {
@@ -40,7 +40,7 @@ class AuthController extends Controller
             ->redirect();
     }
 
-    public function handleProviderCallback(string $provider): JsonResponse
+    public function handleProviderCallback(string $provider): RedirectResponse
     {
         $this->ensureSupportedProvider($provider);
 
@@ -48,9 +48,13 @@ class AuthController extends Controller
 
         $providerUserId = $socialUser->getId();
         $email = $socialUser->getEmail();
+
+        $frontend = rtrim((string) config('app.frontend_url'), '/');
+
         if (! $email) {
-            return response()->json(['message' => 'Email is required from provider'], 422);
+            return redirect()->away($frontend . '/login?error=email_required');
         }
+
         $name = $socialUser->getName() ?: ($email ?: 'User');
 
         $oauthIdentity = OAuthIdentity::where('provider', $provider)
@@ -60,7 +64,7 @@ class AuthController extends Controller
         if ($oauthIdentity) {
             $user = $oauthIdentity->user;
         } else {
-            $user = $email ? User::where('email', $email)->first() : null;
+            $user = User::where('email', $email)->first();
 
             if (! $user) {
                 $user = User::create([
@@ -84,14 +88,7 @@ class AuthController extends Controller
 
         $token = $user->createToken('api')->plainTextToken;
 
-        return response()->json([
-            'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-            ],
-        ]);
+        return redirect()->away($frontend . '/oauth/callback?token=' . urlencode($token));
     }
 
     public function me(Request $request): JsonResponse
