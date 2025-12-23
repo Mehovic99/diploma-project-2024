@@ -1,35 +1,33 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { api, setToken } from "../lib/api";
+import { clearToken } from "../lib/api";
 import { useAuth } from "../lib/auth.jsx";
 
 export default function OAuthCallback() {
-  const [sp] = useSearchParams();
-  const nav = useNavigate();
-  const { setUser } = useAuth();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { loginWithToken } = useAuth();
   const [error, setError] = useState(null);
 
+  const token = searchParams.get("token");
+
   useEffect(() => {
+    if (!token) {
+      setError("Missing token.");
+      return;
+    }
+
     (async () => {
-      const token = sp.get("token");
-
-      if (!token) {
-        setError("Missing token.");
-        return;
-      }
-
-      setToken(token);
-
       try {
-        const me = await api("/api/auth/me", { token });
-        setUser(me);
-        nav("/", { replace: true });
+        await loginWithToken(token);
+        navigate("/", { replace: true });
       } catch {
-        localStorage.removeItem("token");
+        clearToken();
         setError("Login failed. Please try again.");
+        navigate("/login", { replace: true });
       }
     })();
-  }, [sp, nav, setUser]);
+  }, [token, loginWithToken, navigate]);
 
   if (error) {
     return (
@@ -46,7 +44,7 @@ export default function OAuthCallback() {
 
   return (
     <div className="min-h-screen bg-black text-white flex items-center justify-center">
-      Logging in...
+      Completing login...
     </div>
   );
 }

@@ -1,42 +1,51 @@
-const rawBase =
-  import.meta.env.VITE_API_BASE ??
-  import.meta.env.VITE_API_BASE_URL ??
-  "";
-
+const rawBase = import.meta.env.VITE_API_BASE ?? "";
 export const API_BASE = rawBase.replace(/\/$/, "");
 
+const TOKEN_KEY = "auth_token";
+
 export function getToken() {
-  return localStorage.getItem("token");
+  return localStorage.getItem(TOKEN_KEY);
 }
 
 export function setToken(token) {
-  localStorage.setItem("token", token);
+  if (token) {
+    localStorage.setItem(TOKEN_KEY, token);
+  } else {
+    clearToken();
+  }
 }
 
 export function clearToken() {
-  localStorage.removeItem("token");
+  localStorage.removeItem(TOKEN_KEY);
 }
 
 export async function api(path, { method = "GET", token, body } = {}) {
   const headers = { Accept: "application/json" };
+  const activeToken = token ?? getToken();
 
-  if (body) headers["Content-Type"] = "application/json";
-  if (token) headers["Authorization"] = `Bearer ${token}`;
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+  if (activeToken) headers["Authorization"] = `Bearer ${activeToken}`;
 
   const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers,
-    body: body ? JSON.stringify(body) : undefined,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
-  // If backend returns HTML or empty, avoid JSON explode
   const text = await res.text();
   let data = null;
-  try { data = text ? JSON.parse(text) : null; } catch { data = { raw: text }; }
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    data = { raw: text };
+  }
 
   if (!res.ok) {
     const msg = data?.message || `Request failed (${res.status})`;
-    throw new Error(msg);
+    const error = new Error(msg);
+    error.status = res.status;
+    error.data = data;
+    throw error;
   }
 
   return data;
