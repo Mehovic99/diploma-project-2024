@@ -22,14 +22,17 @@ export function clearToken() {
 export async function api(path, { method = "GET", token, body } = {}) {
   const headers = { Accept: "application/json" };
   const activeToken = token ?? getToken();
+  const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
 
-  if (body !== undefined) headers["Content-Type"] = "application/json";
+  if (body !== undefined && !isFormData) {
+    headers["Content-Type"] = "application/json";
+  }
   if (activeToken) headers["Authorization"] = `Bearer ${activeToken}`;
 
   const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body: body !== undefined ? (isFormData ? body : JSON.stringify(body)) : undefined,
   });
 
   const text = await res.text();

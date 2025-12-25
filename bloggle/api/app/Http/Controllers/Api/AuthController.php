@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\OAuthIdentity;
 use App\Models\User;
+use App\Support\UserPayload;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Laravel\Sanctum\PersonalAccessToken;
 use Laravel\Socialite\Facades\Socialite;
 
 class AuthController extends Controller
@@ -95,16 +97,22 @@ class AuthController extends Controller
     {
         $user = $request->user();
 
-        return response()->json([
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-        ]);
+        return response()->json(UserPayload::from($user));
     }
 
     public function logout(Request $request): JsonResponse
     {
-        $request->user()->currentAccessToken()?->delete();
+        $user = $request->user();
+
+        if ($user) {
+            $user->currentAccessToken()?->delete();
+        }
+
+        $bearerToken = $request->bearerToken();
+
+        if ($bearerToken) {
+            PersonalAccessToken::findToken($bearerToken)?->delete();
+        }
 
         return response()->json([
             'message' => 'Logged out successfully',

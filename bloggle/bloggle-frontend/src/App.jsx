@@ -8,6 +8,17 @@ export default function App() {
     await logout();
   };
 
+  const initials =
+    user?.name
+      ? user.name
+          .split(" ")
+          .filter(Boolean)
+          .map((part) => part[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase()
+      : "?";
+
   const linkBase =
     "px-3 py-2 rounded-xl border border-transparent text-sm font-medium transition-colors";
 
@@ -53,6 +64,17 @@ export default function App() {
             >
               Profile
             </NavLink>
+            <div className="w-9 h-9 rounded-full border border-zinc-700 overflow-hidden bg-zinc-900 flex items-center justify-center text-xs font-semibold">
+              {user?.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt={user.name ?? "User avatar"}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span>{initials}</span>
+              )}
+            </div>
             <button
               onClick={handleLogout}
               className="px-3 py-2 rounded-xl bg-zinc-900 text-white border border-zinc-700 hover:bg-zinc-800 transition-colors text-sm font-medium"
