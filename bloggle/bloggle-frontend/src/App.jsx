@@ -1,20 +1,11 @@
-import { NavLink, Outlet, Route, Routes, useNavigate } from "react-router-dom";
+import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "./lib/auth.jsx";
-import RequireAuth from "./routes/RequireAuth.jsx";
-import Home from "./pages/Home.jsx";
-import Login from "./pages/Login.jsx";
-import Register from "./pages/Register.jsx";
-import News from "./pages/News.jsx";
-import Profile from "./pages/Profile.jsx";
-import OAuthCallback from "./pages/OAuthCallback.jsx";
 
-function ProtectedLayout() {
+export default function App() {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
 
   const handleLogout = async () => {
     await logout();
-    navigate("/login", { replace: true });
   };
 
   const linkBase =
@@ -76,36 +67,5 @@ function ProtectedLayout() {
         <Outlet />
       </main>
     </div>
-  );
-}
-
-function NotFound() {
-  return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center">
-      <div className="text-center space-y-2">
-        <p className="text-xl font-semibold">Page not found</p>
-        <p className="text-zinc-400">Check the address or go back home.</p>
-      </div>
-    </div>
-  );
-}
-
-export default function App() {
-  return (
-    <Routes>
-      <Route path="/oauth/callback" element={<OAuthCallback />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-
-      <Route element={<RequireAuth />}>
-        <Route element={<ProtectedLayout />}>
-          <Route path="/" element={<Home />} />
-          <Route path="/news" element={<News />} />
-          <Route path="/profile/:id" element={<Profile />} />
-        </Route>
-      </Route>
-
-      <Route path="*" element={<NotFound />} />
-    </Routes>
   );
 }
