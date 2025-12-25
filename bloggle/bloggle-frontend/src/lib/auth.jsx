@@ -16,7 +16,7 @@ export function AuthProvider({ children }) {
   const [initializing, setInitializing] = useState(true);
 
   const fetchMe = useCallback(async (activeToken) => {
-    const me = await api("/api/me", { token: activeToken });
+    const me = await api("/api/auth/me", { token: activeToken });
     setUser(me);
     setToken(activeToken);
     return me;
@@ -61,7 +61,7 @@ export function AuthProvider({ children }) {
 
     if (activeToken) {
       try {
-        await api("/api/logout", { method: "POST", token: activeToken });
+        await api("/api/auth/logout", { method: "POST", token: activeToken });
       } catch {
         // ignore logout errors, client state will still clear
       }
