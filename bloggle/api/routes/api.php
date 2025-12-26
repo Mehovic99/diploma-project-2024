@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AuthApiController;
 use App\Http\Controllers\Api\CommentController;
+use App\Http\Controllers\Api\FeedController;
 use App\Http\Controllers\Api\FollowController;
 use App\Http\Controllers\Api\NewsController;
 use App\Http\Controllers\Api\PostController;
@@ -28,6 +29,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reports', [ReportController::class, 'index']);
     Route::post('/reports/{id}/resolve', [ReportController::class, 'resolve']);
     Route::post('/users/me/avatar', [UserController::class, 'updateAvatar']);
+    Route::get('/feed/following', [FeedController::class, 'following']);
     Route::post('/users/{id}/follow', [FollowController::class, 'follow']);
     Route::delete('/users/{id}/follow', [FollowController::class, 'unfollow']);
     Route::get('/users/me/following', [FollowController::class, 'following']);
