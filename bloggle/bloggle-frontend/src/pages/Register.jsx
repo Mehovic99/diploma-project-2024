@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth.jsx";
+import Button from "../components/Button.jsx";
 
 export default function Register() {
   const { user, token, initializing, loginWithToken } = useAuth();
@@ -46,87 +47,97 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center p-6">
-      <div className="w-full max-w-md bg-zinc-900/60 border border-zinc-800 rounded-3xl p-8 space-y-4">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Create account</h1>
-          <p className="text-zinc-400">Join Bloggle in a few seconds.</p>
+    <div className="min-h-screen flex items-center justify-center bg-black p-4 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-zinc-800/20 via-black to-black"></div>
+
+      <div className="w-full max-w-md bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 rounded-3xl p-8 shadow-2xl relative z-10 transition-all duration-300">
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-zinc-800 rounded-2xl mx-auto mb-4 flex items-center justify-center border border-zinc-700 shadow-lg">
+            <span className="text-2xl font-black text-white">B</span>
+          </div>
+          <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Create account</h1>
+          <p className="text-zinc-500">Join Bloggle in a few seconds.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm text-zinc-300" htmlFor="name">
+          <div>
+            <label className="block text-zinc-400 text-xs font-bold uppercase tracking-wider mb-2" htmlFor="name">
               Name
             </label>
             <input
               id="name"
               type="text"
               autoComplete="name"
-              className="w-full rounded-xl bg-black/40 border border-zinc-800 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-zinc-600"
               value={name}
               onChange={(event) => setName(event.target.value)}
+              className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-white focus:border-white focus:outline-none transition-all placeholder:text-zinc-700"
+              placeholder="Enter your name"
               required
             />
           </div>
-          <div className="space-y-2">
-            <label className="text-sm text-zinc-300" htmlFor="email">
+          <div>
+            <label className="block text-zinc-400 text-xs font-bold uppercase tracking-wider mb-2" htmlFor="email">
               Email
             </label>
             <input
               id="email"
               type="email"
               autoComplete="email"
-              className="w-full rounded-xl bg-black/40 border border-zinc-800 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-zinc-600"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
+              className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-white focus:border-white focus:outline-none transition-all placeholder:text-zinc-700"
+              placeholder="Enter your email"
               required
             />
           </div>
-          <div className="space-y-2">
-            <label className="text-sm text-zinc-300" htmlFor="password">
+          <div>
+            <label className="block text-zinc-400 text-xs font-bold uppercase tracking-wider mb-2" htmlFor="password">
               Password
             </label>
             <input
               id="password"
               type="password"
               autoComplete="new-password"
-              className="w-full rounded-xl bg-black/40 border border-zinc-800 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-zinc-600"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
+              className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-white focus:border-white focus:outline-none transition-all placeholder:text-zinc-700"
+              placeholder="Create a password"
               required
             />
           </div>
-          <div className="space-y-2">
-            <label className="text-sm text-zinc-300" htmlFor="password_confirmation">
+          <div>
+            <label
+              className="block text-zinc-400 text-xs font-bold uppercase tracking-wider mb-2"
+              htmlFor="password_confirmation"
+            >
               Confirm password
             </label>
             <input
               id="password_confirmation"
               type="password"
               autoComplete="new-password"
-              className="w-full rounded-xl bg-black/40 border border-zinc-800 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-zinc-600"
               value={passwordConfirmation}
               onChange={(event) => setPasswordConfirmation(event.target.value)}
+              className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-white focus:border-white focus:outline-none transition-all placeholder:text-zinc-700"
+              placeholder="Confirm your password"
               required
             />
           </div>
+
           {error ? <p className="text-sm text-red-400">{error}</p> : null}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full px-4 py-3 rounded-xl bg-white text-black font-bold text-center disabled:opacity-60"
-          >
+
+          <Button type="submit" className="w-full py-3 text-base" disabled={submitting}>
             {submitting ? "Creating account..." : "Create account"}
-          </button>
+          </Button>
         </form>
 
-        <p className="text-sm text-zinc-400">
-          Already have an account?{" "}
-          <Link className="text-white underline" to="/login">
-            Sign in
-          </Link>
-          .
-        </p>
+        <div className="mt-6 text-center">
+          <p className="text-zinc-500 text-sm">
+            <Link className="text-white hover:underline font-medium" to="/login">
+              Already have an account? Log in
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
