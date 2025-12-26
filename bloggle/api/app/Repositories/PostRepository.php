@@ -17,6 +17,7 @@ class PostRepository implements PostRepositoryInterface
     public function paginateFeed(int $perPage = 20): LengthAwarePaginator
     {
         return $this->post->newQuery()
+            ->where('type', 'user_post')
             ->where('status', 'published')
             ->orderByDesc('published_at')
             ->orderByDesc('created_at')
