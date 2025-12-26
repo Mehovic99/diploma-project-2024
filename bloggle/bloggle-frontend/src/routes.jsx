@@ -14,13 +14,19 @@ const routes = [
   { path: "/oauth/callback", element: <OAuthCallback /> },
   {
     path: "/",
-    element: <RequireAuth />,
+    element: <App />,
     children: [
       {
-        element: <App />,
+        index: true,
+        element: <Home />,
+      },
+      {
+        path: "news",
+        element: <News />,
+      },
+      {
+        element: <RequireAuth />,
         children: [
-          { index: true, element: <Home /> },
-          { path: "news", element: <News /> },
           { path: "profile/:id", element: <Profile /> },
         ],
       },

@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth.jsx";
 import PostCard from "../components/PostCard.jsx";
 
 export default function Home() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
+  const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,6 +46,15 @@ export default function Home() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (submitting) return;
+
+    if (!token) {
+      navigate("/login", {
+        replace: false,
+        state: { message: "Please sign in to create a post." },
+      });
+      return;
+    }
+
     setSubmitting(true);
     setSubmitError("");
 

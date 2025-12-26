@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { api, API_BASE } from "../lib/api";
 import { useAuth } from "../lib/auth.jsx";
 
 export default function Login() {
   const { user, token, initializing, loginWithToken } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const notice = location.state?.message ?? "";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -48,6 +50,8 @@ export default function Login() {
           <h1 className="text-3xl font-bold mb-2">Bloggle</h1>
           <p className="text-zinc-400">Sign in to continue</p>
         </div>
+
+        {notice ? <p className="text-sm text-amber-300">{notice}</p> : null}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
