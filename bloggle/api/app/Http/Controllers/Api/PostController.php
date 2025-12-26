@@ -56,7 +56,14 @@ class PostController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'body_md' => ['nullable', 'string'],
             'link_url' => ['nullable', 'url'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
+
+        if ($request->hasFile('image')) {
+            $validatedData['image_path'] = $request->file('image')->store('post-images', 'public');
+        }
+
+        unset($validatedData['image']);
 
         $post = $this->postRepository->createForUser($user, $validatedData);
 

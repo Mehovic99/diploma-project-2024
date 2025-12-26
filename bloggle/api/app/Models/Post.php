@@ -20,6 +20,7 @@ class Post extends Model
         'body_md',
         'body_html',
         'link_url',
+        'image_path',
         'status',
         'published_at',
     ];

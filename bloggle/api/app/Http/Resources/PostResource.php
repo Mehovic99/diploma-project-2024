@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class PostResource extends JsonResource
 {
@@ -21,6 +22,7 @@ class PostResource extends JsonResource
             'slug' => $this->slug,
             'body_html' => $this->body_html,
             'link_url' => $this->link_url,
+            'image_url' => $this->image_path ? Storage::disk('public')->url($this->image_path) : null,
             'status' => $this->status,
             'score' => $this->score,
             'comments_count' => $this->comments_count,
