@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowBigDown,
@@ -27,8 +27,27 @@ export default function PostDetail() {
   const [actionError, setActionError] = useState("");
   const [commentText, setCommentText] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [voteBusy, setVoteBusy] = useState(false);
+  const voteQueueRef = useRef([]);
+  const voteInFlightRef = useRef(false);
   const [userVote, setUserVote] = useState(0);
+
+  const reloadPost = useCallback(async () => {
+    if (!slug) return;
+
+    try {
+      const data = await api(`/api/posts/${slug}`);
+      const resolvedPost = data?.post?.data ?? data?.post ?? null;
+      const commentPayload = data?.comments?.data ?? data?.comments ?? [];
+
+      setPost(resolvedPost);
+      setComments(Array.isArray(commentPayload) ? commentPayload : []);
+      setUserVote(
+        typeof resolvedPost?.user_vote === "number" ? resolvedPost.user_vote : 0
+      );
+    } catch {
+      // ignore reload errors
+    }
+  }, [slug]);
 
   useEffect(() => {
     let active = true;
@@ -46,6 +65,9 @@ export default function PostDetail() {
 
         setPost(resolvedPost);
         setComments(Array.isArray(commentPayload) ? commentPayload : []);
+        setUserVote(
+          typeof resolvedPost?.user_vote === "number" ? resolvedPost.user_vote : 0
+        );
       } catch (err) {
         if (!active) return;
         setLoadError(err?.data?.message || err.message || "Failed to load post.");
@@ -126,8 +148,42 @@ export default function PostDetail() {
     }
   };
 
-  const handleVote = async (value) => {
-    if (voteBusy || !post?.slug) return;
+  const processVoteQueue = useCallback(
+    async function runQueue() {
+      if (voteInFlightRef.current) return;
+      if (!post?.slug || voteQueueRef.current.length === 0) return;
+
+      voteInFlightRef.current = true;
+      const value = voteQueueRef.current.shift();
+
+      try {
+        const data = await api(`/api/posts/${post.slug}/vote`, {
+          method: "POST",
+          body: { value },
+        });
+
+        const nextScore = typeof data?.score === "number" ? data.score : post.score;
+        const nextVoteFromServer =
+          typeof data?.user_vote === "number" ? data.user_vote : 0;
+        setPost((prev) =>
+          prev
+            ? { ...prev, score: nextScore, user_vote: nextVoteFromServer }
+            : prev
+        );
+        setUserVote(nextVoteFromServer);
+      } catch (err) {
+        setActionError(err?.data?.message || err.message || "Failed to vote.");
+        await reloadPost();
+      } finally {
+        voteInFlightRef.current = false;
+        runQueue();
+      }
+    },
+    [post, reloadPost, setPost]
+  );
+
+  const handleVote = (value) => {
+    if (!post?.slug) return;
 
     if (!token) {
       navigate("/login", {
@@ -152,29 +208,14 @@ export default function PostDetail() {
           : -1;
     const optimisticScore = currentScore + (nextVote - previousVote);
 
-    setPost((prev) => (prev ? { ...prev, score: optimisticScore } : prev));
+    setPost((prev) =>
+      prev ? { ...prev, score: optimisticScore, user_vote: nextVote } : prev
+    );
     setUserVote(nextVote);
-    setVoteBusy(true);
     setActionError("");
 
-    try {
-      const data = await api(`/api/posts/${post.slug}/vote`, {
-        method: "POST",
-        body: { value },
-      });
-
-      const nextScore = typeof data?.score === "number" ? data.score : optimisticScore;
-      const nextVoteFromServer =
-        typeof data?.user_vote === "number" ? data.user_vote : 0;
-      setPost((prev) => (prev ? { ...prev, score: nextScore } : prev));
-      setUserVote(nextVoteFromServer);
-    } catch (err) {
-      setPost((prev) => (prev ? { ...prev, score: currentScore } : prev));
-      setUserVote(previousVote);
-      setActionError(err?.data?.message || err.message || "Failed to vote.");
-    } finally {
-      setVoteBusy(false);
-    }
+    voteQueueRef.current.push(value);
+    processVoteQueue();
   };
 
   if (loading) {

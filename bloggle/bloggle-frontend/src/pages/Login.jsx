@@ -39,13 +39,17 @@ export default function Login() {
     if (checking) return;
 
     const trimmed = email.trim();
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const isValidEmail = emailPattern.test(trimmed);
+
+    console.log("[login] lookup", { email, trimmed, isValidEmail });
 
     if (!trimmed) {
       setError("Email is required.");
       return;
     }
 
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(trimmed)) {
+    if (!isValidEmail) {
       setError("Enter a valid email address.");
       return;
     }
@@ -59,6 +63,8 @@ export default function Login() {
         body: { email: trimmed },
       });
 
+      console.log("[login] lookup response", data);
+
       if (!data?.exists) {
         setError("No account found for that email.");
         return;
@@ -67,6 +73,7 @@ export default function Login() {
       setLookupUser(data.user ?? null);
       setStep(2);
     } catch (err) {
+      console.log("[login] lookup error", err);
       setError(err?.data?.message || err.message || "Unable to find that account.");
     } finally {
       setChecking(false);

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Calendar, MapPin } from "lucide-react";
 import { api } from "../lib/api";
@@ -34,7 +34,8 @@ export default function Profile() {
   const [followBusy, setFollowBusy] = useState(false);
   const [followError, setFollowError] = useState("");
   const [voteError, setVoteError] = useState("");
-  const [voteBusy, setVoteBusy] = useState(false);
+  const voteQueueRef = useRef(new Map());
+  const voteInFlightRef = useRef(new Set());
 
   const {
     items: feedPosts,
@@ -209,12 +210,71 @@ export default function Profile() {
     navigate(`/posts/${post.slug}`);
   };
 
-  const handleInteraction = async (postId, type) => {
-    if (voteBusy) return;
+  const processVoteQueue = useCallback(
+    async function runQueue(postId) {
+      const queue = voteQueueRef.current.get(postId);
+      if (!queue || queue.length === 0) {
+        voteInFlightRef.current.delete(postId);
+        return;
+      }
+
+      voteInFlightRef.current.add(postId);
+
+      const { slug, value } = queue.shift();
+      if (queue.length === 0) {
+        voteQueueRef.current.delete(postId);
+      }
+
+      try {
+        const data = await api(`/api/posts/${slug}/vote`, {
+          method: "POST",
+          body: { value },
+        });
+
+        const nextScore = typeof data?.score === "number" ? data.score : undefined;
+        const nextVoteFromServer =
+          typeof data?.user_vote === "number" ? data.user_vote : 0;
+
+        setFeedPosts((prev) =>
+          prev.map((post) =>
+            post.id === postId
+              ? {
+                  ...post,
+                  score: nextScore ?? post.score,
+                  user_vote: nextVoteFromServer,
+                }
+              : post
+          )
+        );
+        setFollowingFeed((prev) =>
+          prev.map((post) =>
+            post.id === postId
+              ? {
+                  ...post,
+                  score: nextScore ?? post.score,
+                  user_vote: nextVoteFromServer,
+                }
+              : post
+          )
+        );
+      } catch (err) {
+        setVoteError(err?.data?.message || err.message || "Unable to vote.");
+        await reloadFeed();
+        await reloadFollowing();
+      } finally {
+        runQueue(postId);
+      }
+    },
+    [reloadFeed, reloadFollowing, setFeedPosts, setFollowingFeed]
+  );
+
+  const handleInteraction = (postId, type) => {
     const target =
       feedPosts.find((post) => post.id === postId) ??
       followingFeed.find((post) => post.id === postId);
     if (!target?.slug) return;
+
+    setVoteError("");
 
     const value = type === "likes" ? 1 : -1;
     const currentScore =
@@ -246,51 +306,13 @@ export default function Profile() {
           : post
       )
     );
-    setVoteBusy(true);
-    setVoteError("");
 
-    try {
-      const data = await api(`/api/posts/${target.slug}/vote`, {
-        method: "POST",
-        body: { value },
-      });
+    const queue = voteQueueRef.current.get(postId) ?? [];
+    queue.push({ slug: target.slug, value });
+    voteQueueRef.current.set(postId, queue);
 
-      const nextScore = typeof data?.score === "number" ? data.score : optimisticScore;
-      const nextVoteFromServer =
-        typeof data?.user_vote === "number" ? data.user_vote : 0;
-
-      setFeedPosts((prev) =>
-        prev.map((post) =>
-          post.id === postId
-            ? { ...post, score: nextScore, user_vote: nextVoteFromServer }
-            : post
-        )
-      );
-      setFollowingFeed((prev) =>
-        prev.map((post) =>
-          post.id === postId
-            ? { ...post, score: nextScore, user_vote: nextVoteFromServer }
-            : post
-        )
-      );
-    } catch (err) {
-      setFeedPosts((prev) =>
-        prev.map((post) =>
-          post.id === postId
-            ? { ...post, score: currentScore, user_vote: currentVote }
-            : post
-        )
-      );
-      setFollowingFeed((prev) =>
-        prev.map((post) =>
-          post.id === postId
-            ? { ...post, score: currentScore, user_vote: currentVote }
-            : post
-        )
-      );
-      setVoteError(err?.data?.message || err.message || "Unable to vote.");
-    } finally {
-      setVoteBusy(false);
+    if (!voteInFlightRef.current.has(postId)) {
+      processVoteQueue(postId);
     }
   };
 

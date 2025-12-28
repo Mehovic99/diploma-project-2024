@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth.jsx";
@@ -11,9 +11,10 @@ import ErrorState from "../components/ErrorState.jsx";
 export default function Home() {
   const { user, token } = useAuth();
   const navigate = useNavigate();
-  const { items, setItems, loading, error } = useFeed("/api/posts");
+  const { items, setItems, loading, error, reload } = useFeed("/api/posts");
   const [voteError, setVoteError] = useState("");
-  const [voteBusy, setVoteBusy] = useState(false);
+  const voteQueueRef = useRef(new Map());
+  const voteInFlightRef = useRef(new Set());
 
   const posts = useMemo(
     () => items.filter((post) => post.type !== "news"),
@@ -35,10 +36,57 @@ export default function Home() {
     navigate(`/posts/${post.slug}`);
   };
 
-  const handleInteraction = async (postId, type) => {
-    if (voteBusy) return;
+  const processVoteQueue = useCallback(
+    async function runQueue(postId) {
+      const queue = voteQueueRef.current.get(postId);
+      if (!queue || queue.length === 0) {
+        voteInFlightRef.current.delete(postId);
+        return;
+      }
+
+      voteInFlightRef.current.add(postId);
+
+      const { slug, value } = queue.shift();
+      if (queue.length === 0) {
+        voteQueueRef.current.delete(postId);
+      }
+
+      try {
+        const data = await api(`/api/posts/${slug}/vote`, {
+          method: "POST",
+          body: { value },
+        });
+
+        const nextScore = typeof data?.score === "number" ? data.score : undefined;
+        const nextVoteFromServer =
+          typeof data?.user_vote === "number" ? data.user_vote : 0;
+
+        setItems((prev) =>
+          prev.map((post) =>
+            post.id === postId
+              ? {
+                  ...post,
+                  score: nextScore ?? post.score,
+                  user_vote: nextVoteFromServer,
+                }
+              : post
+          )
+        );
+      } catch (err) {
+        setVoteError(err?.data?.message || err.message || "Unable to vote.");
+        await reload();
+      } finally {
+        runQueue(postId);
+      }
+    },
+    [reload, setItems]
+  );
+
+  const handleInteraction = (postId, type) => {
     const target = items.find((post) => post.id === postId);
     if (!target?.slug) return;
+
+    setVoteError("");
 
     if (!token) {
       navigate("/login", {
@@ -71,36 +119,13 @@ export default function Home() {
           : post
       )
     );
-    setVoteBusy(true);
-    setVoteError("");
 
-    try {
-      const data = await api(`/api/posts/${target.slug}/vote`, {
-        method: "POST",
-        body: { value },
-      });
+    const queue = voteQueueRef.current.get(postId) ?? [];
+    queue.push({ slug: target.slug, value });
+    voteQueueRef.current.set(postId, queue);
 
-      const nextScore = typeof data?.score === "number" ? data.score : optimisticScore;
-      const nextVoteFromServer =
-        typeof data?.user_vote === "number" ? data.user_vote : 0;
-      setItems((prev) =>
-        prev.map((post) =>
-          post.id === postId
-            ? { ...post, score: nextScore, user_vote: nextVoteFromServer }
-            : post
-        )
-      );
-    } catch (err) {
-      setItems((prev) =>
-        prev.map((post) =>
-          post.id === postId
-            ? { ...post, score: currentScore, user_vote: currentVote }
-            : post
-        )
-      );
-      setVoteError(err?.data?.message || err.message || "Unable to vote.");
-    } finally {
-      setVoteBusy(false);
+    if (!voteInFlightRef.current.has(postId)) {
+      processVoteQueue(postId);
     }
   };
 
