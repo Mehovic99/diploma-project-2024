@@ -39,12 +39,14 @@ export default function Profile() {
   const {
     items: feedPosts,
     setItems: setFeedPosts,
+    reload: reloadFeed,
     loading: postsLoading,
     error: postsError,
   } = useFeed("/api/posts");
   const {
     items: followingFeed,
     setItems: setFollowingFeed,
+    reload: reloadFollowing,
     loading: followingLoading,
     error: followingError,
   } = useFeed("/api/feed/following");
@@ -112,6 +114,16 @@ export default function Profile() {
     }
   }, [id, isSelf, profileUser]);
 
+  useEffect(() => {
+    if (!isSelf) return;
+    reloadFollowing();
+  }, [id, isSelf, reloadFollowing]);
+
+  useEffect(() => {
+    if (!isSelf || activeTab !== "following") return;
+    reloadFollowing();
+  }, [activeTab, isSelf, reloadFollowing]);
+
   const userPosts = useMemo(() => {
     if (!profileUser?.id) return [];
     return feedPosts.filter((post) => post.author?.id === profileUser.id);
@@ -178,6 +190,8 @@ export default function Profile() {
       } else if (data?.user) {
         setFollowingUsers((prev) => [...prev, data.user]);
       }
+
+      reloadFollowing();
     } catch (err) {
       setFollowError(err?.data?.message || err.message || "Unable to update follow.");
     } finally {
@@ -203,6 +217,22 @@ export default function Profile() {
     if (!target?.slug) return;
 
     const value = type === "likes" ? 1 : -1;
+    const currentScore =
+      typeof target.score === "number"
+        ? target.score
+        : Number(target.likes ?? 0) - Number(target.dislikes ?? 0);
+    const optimisticScore = currentScore + value;
+
+    setFeedPosts((prev) =>
+      prev.map((post) =>
+        post.id === postId ? { ...post, score: optimisticScore } : post
+      )
+    );
+    setFollowingFeed((prev) =>
+      prev.map((post) =>
+        post.id === postId ? { ...post, score: optimisticScore } : post
+      )
+    );
     setVoteBusy(true);
     setVoteError("");
 
@@ -212,7 +242,7 @@ export default function Profile() {
         body: { value },
       });
 
-      const nextScore = data?.score ?? target.score;
+      const nextScore = typeof data?.score === "number" ? data.score : optimisticScore;
 
       setFeedPosts((prev) =>
         prev.map((post) =>
@@ -225,6 +255,16 @@ export default function Profile() {
         )
       );
     } catch (err) {
+      setFeedPosts((prev) =>
+        prev.map((post) =>
+          post.id === postId ? { ...post, score: currentScore } : post
+        )
+      );
+      setFollowingFeed((prev) =>
+        prev.map((post) =>
+          post.id === postId ? { ...post, score: currentScore } : post
+        )
+      );
       setVoteError(err?.data?.message || err.message || "Unable to vote.");
     } finally {
       setVoteBusy(false);

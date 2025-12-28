@@ -49,6 +49,17 @@ export default function Home() {
     }
 
     const value = type === "likes" ? 1 : -1;
+    const currentScore =
+      typeof target.score === "number"
+        ? target.score
+        : Number(target.likes ?? 0) - Number(target.dislikes ?? 0);
+    const optimisticScore = currentScore + value;
+
+    setItems((prev) =>
+      prev.map((post) =>
+        post.id === postId ? { ...post, score: optimisticScore } : post
+      )
+    );
     setVoteBusy(true);
     setVoteError("");
 
@@ -58,12 +69,18 @@ export default function Home() {
         body: { value },
       });
 
+      const nextScore = typeof data?.score === "number" ? data.score : optimisticScore;
       setItems((prev) =>
         prev.map((post) =>
-          post.id === postId ? { ...post, score: data?.score ?? post.score } : post
+          post.id === postId ? { ...post, score: nextScore } : post
         )
       );
     } catch (err) {
+      setItems((prev) =>
+        prev.map((post) =>
+          post.id === postId ? { ...post, score: currentScore } : post
+        )
+      );
       setVoteError(err?.data?.message || err.message || "Unable to vote.");
     } finally {
       setVoteBusy(false);

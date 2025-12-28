@@ -132,6 +132,15 @@ export default function PostDetail() {
       return;
     }
 
+    const currentScore =
+      typeof post.score === "number"
+        ? post.score
+        : Number(post.likes ?? 0) - Number(post.dislikes ?? 0);
+    const optimisticScore = currentScore + value;
+    const previousVote = userVote;
+
+    setPost((prev) => (prev ? { ...prev, score: optimisticScore } : prev));
+    setUserVote(value);
     setVoteBusy(true);
     setActionError("");
 
@@ -141,9 +150,12 @@ export default function PostDetail() {
         body: { value },
       });
 
-      setPost((prev) => (prev ? { ...prev, score: data?.score ?? prev.score } : prev));
+      const nextScore = typeof data?.score === "number" ? data.score : optimisticScore;
+      setPost((prev) => (prev ? { ...prev, score: nextScore } : prev));
       setUserVote(data?.user_vote ?? value);
     } catch (err) {
+      setPost((prev) => (prev ? { ...prev, score: currentScore } : prev));
+      setUserVote(previousVote);
       setActionError(err?.data?.message || err.message || "Failed to vote.");
     } finally {
       setVoteBusy(false);

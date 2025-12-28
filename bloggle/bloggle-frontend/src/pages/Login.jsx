@@ -129,7 +129,7 @@ export default function Login() {
               </div>
               <div className="pt-4">
                 {error ? <p className="text-sm text-red-400 mt-3">{error}</p> : null}
-                <Button className="w-full py-3 text-base" disabled={checking}>
+                <Button type="submit" className="w-full py-3 text-base" disabled={checking}>
                   {checking ? "Checking..." : "Next"}
                 </Button>
               </div>
