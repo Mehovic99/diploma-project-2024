@@ -186,6 +186,11 @@ export default function Profile() {
     navigate(`/profile/${userId}`);
   };
 
+  const handlePostClick = (post) => {
+    if (!post?.slug) return;
+    navigate(`/posts/${post.slug}`);
+  };
+
   return (
     <div className="max-w-3xl mx-auto px-0 sm:px-4 py-4 sm:py-8 animate-in slide-in-from-right-4 duration-300">
       <Link
@@ -312,6 +317,7 @@ export default function Profile() {
               }
               currentUserId={user?.id}
               onUserClick={handleUserClick}
+              onPostClick={handlePostClick}
             />
           )
         ) : isSelf ? (
@@ -326,6 +332,7 @@ export default function Profile() {
               emptySubtitle="When you follow someone, their posts will appear here."
               currentUserId={user?.id}
               onUserClick={handleUserClick}
+              onPostClick={handlePostClick}
             />
           )
         ) : (

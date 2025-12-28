@@ -27,6 +27,11 @@ export default function Home() {
     navigate(`/profile/${userId}`);
   };
 
+  const handlePostClick = (post) => {
+    if (!post?.slug) return;
+    navigate(`/posts/${post.slug}`);
+  };
+
   return (
     <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
       <PostComposer onCreated={handleCreated} />
@@ -39,6 +44,7 @@ export default function Home() {
           currentUserId={user?.id}
           emptyTitle="No posts found."
           onUserClick={handleUserClick}
+          onPostClick={handlePostClick}
         />
       ) : null}
     </main>

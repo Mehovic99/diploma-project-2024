@@ -4,6 +4,7 @@ import Home from "./pages/Home.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import News from "./pages/News.jsx";
+import PostDetail from "./pages/PostDetail.jsx";
 import Profile from "./pages/Profile.jsx";
 import OAuthCallback from "./pages/OAuthCallback.jsx";
 import NotFound from "./pages/NotFound.jsx";
@@ -23,6 +24,10 @@ const routes = [
       {
         path: "news",
         element: <News />,
+      },
+      {
+        path: "posts/:slug",
+        element: <PostDetail />,
       },
       {
         element: <RequireAuth />,

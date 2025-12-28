@@ -1,5 +1,10 @@
-import { useState } from "react";
-import { Heart, MessageCircle, Share2, ThumbsDown, Trash2 } from "lucide-react";
+import {
+  ArrowBigDown,
+  ArrowBigUp,
+  MessageCircle,
+  Share2,
+  Trash2,
+} from "lucide-react";
 import Avatar from "./Avatar.jsx";
 import { getUsername } from "../lib/userUtils";
 
@@ -12,7 +17,6 @@ export default function PostCard({
   onClick,
   onUserClick,
 }) {
-  const [showComments, setShowComments] = useState(false);
   const resolvedAuthor = author ?? post.author ?? {};
   const authorName = resolvedAuthor.name ?? "Unknown";
   const authorUsername = getUsername(resolvedAuthor);
@@ -30,6 +34,8 @@ export default function PostCard({
         ? post.score
         : 0;
   const dislikes = typeof post.dislikes === "number" ? post.dislikes : 0;
+  const score =
+    typeof post.score === "number" ? post.score : Number(likes) - Number(dislikes);
   const commentsCount =
     post.comments?.length ??
     post.comments_count ??
@@ -40,6 +46,11 @@ export default function PostCard({
     if (onUserClick && authorId) {
       onUserClick(authorId);
     }
+  };
+
+  const handleOpenDetail = (event) => {
+    event?.stopPropagation();
+    onClick?.();
   };
 
   return (
@@ -116,24 +127,39 @@ export default function PostCard({
             className="flex items-center gap-1 text-zinc-500 pt-1"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex items-center bg-black border border-zinc-800 rounded-full">
+            <div className="flex items-center bg-black border border-zinc-800 rounded-full mr-2">
               <button
                 onClick={() => onInteraction?.(post.id, "likes")}
-                className="flex items-center gap-2 px-3 py-1.5 hover:bg-zinc-800 hover:text-white transition-colors rounded-l-full group"
+                className="p-1.5 pl-3 hover:bg-zinc-800 hover:text-orange-500 transition-colors rounded-l-full group"
               >
-                <Heart size={18} className={likes > 0 ? "fill-white text-white" : ""} />
-                <span className="text-sm font-bold">{likes}</span>
+                <ArrowBigUp
+                  size={20}
+                  className={likes > 0 ? "fill-orange-500/20 text-orange-500" : ""}
+                />
               </button>
-              <div className="w-[1px] h-4 bg-zinc-800"></div>
+              <span
+                className={`text-sm font-bold px-1 min-w-[1.5rem] text-center ${
+                  score > 0
+                    ? "text-orange-500"
+                    : score < 0
+                      ? "text-blue-500"
+                      : "text-zinc-300"
+                }`}
+              >
+                {score}
+              </span>
               <button
                 onClick={() => onInteraction?.(post.id, "dislikes")}
-                className="px-3 py-1.5 hover:bg-zinc-800 hover:text-red-400 transition-colors rounded-r-full"
+                className="p-1.5 pr-3 hover:bg-zinc-800 hover:text-blue-500 transition-colors rounded-r-full group"
               >
-                <ThumbsDown size={18} className={dislikes > 0 ? "text-red-400" : ""} />
+                <ArrowBigDown
+                  size={20}
+                  className={dislikes > 0 ? "fill-blue-500/20 text-blue-500" : ""}
+                />
               </button>
             </div>
             <button
-              onClick={() => setShowComments(!showComments)}
+              onClick={handleOpenDetail}
               className="flex items-center gap-2 px-3 py-1.5 hover:bg-zinc-800 hover:text-white rounded-full transition-colors ml-2"
             >
               <MessageCircle size={18} />

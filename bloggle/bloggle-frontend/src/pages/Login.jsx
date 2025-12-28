@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { api, API_BASE } from "../lib/api";
 import { useAuth } from "../lib/auth.jsx";
 import Button from "../components/Button.jsx";
@@ -11,6 +12,7 @@ export default function Login() {
   const notice = location.state?.message ?? "";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -23,6 +25,19 @@ export default function Login() {
 
   const google = `${API_BASE}/auth/google/redirect`;
   const facebook = `${API_BASE}/auth/facebook/redirect`;
+
+  const emailInitials = useMemo(() => {
+    const trimmed = email.trim();
+    if (!trimmed) return "";
+    return trimmed.slice(0, 2).toUpperCase();
+  }, [email]);
+
+  const handleNext = (event) => {
+    event.preventDefault();
+    if (!email.trim()) return;
+    setStep(2);
+    setError("");
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -54,48 +69,100 @@ export default function Login() {
             <span className="text-2xl font-black text-white">B</span>
           </div>
           <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Bloggle</h1>
-          <p className="text-zinc-500">Sign in to continue.</p>
+          <p className="text-zinc-500">Welcome back.</p>
         </div>
 
         {notice ? <p className="text-sm text-amber-300 mb-4">{notice}</p> : null}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-zinc-400 text-xs font-bold uppercase tracking-wider mb-2" htmlFor="email">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-white focus:border-white focus:outline-none transition-all placeholder:text-zinc-700"
-              placeholder="Enter your email"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-zinc-400 text-xs font-bold uppercase tracking-wider mb-2" htmlFor="password">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-white focus:border-white focus:outline-none transition-all placeholder:text-zinc-700"
-              placeholder="Enter your password"
-              required
-            />
-          </div>
+        <form onSubmit={step === 1 ? handleNext : handleSubmit} className="space-y-4">
+          {step === 1 ? (
+            <div className="animate-in fade-in slide-in-from-right duration-300">
+              <div>
+                <label className="block text-zinc-400 text-xs font-bold uppercase tracking-wider mb-2" htmlFor="email">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-white focus:border-white focus:outline-none transition-all placeholder:text-zinc-700"
+                  placeholder="Enter your email"
+                  autoFocus
+                  required
+                />
+              </div>
+              <div className="pt-4">
+                <Button className="w-full py-3 text-base">Next</Button>
+              </div>
+            </div>
+          ) : (
+            <div className="animate-in fade-in slide-in-from-right duration-300">
+              <div className="flex items-center justify-between bg-zinc-800/50 rounded-xl p-3 border border-zinc-800 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-xs font-bold text-white">
+                    {emailInitials || "?"}
+                  </div>
+                  <div className="text-sm">
+                    <p className="text-white font-medium">{email}</p>
+                    <p className="text-zinc-500 text-xs">Signing in</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep(1);
+                    setPassword("");
+                    setError("");
+                  }}
+                  className="text-xs font-medium text-zinc-400 hover:text-white transition-colors"
+                >
+                  Change
+                </button>
+              </div>
 
-          {error ? <p className="text-sm text-red-400">{error}</p> : null}
+              <div>
+                <label className="block text-zinc-400 text-xs font-bold uppercase tracking-wider mb-2" htmlFor="password">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-white focus:border-white focus:outline-none transition-all placeholder:text-zinc-700"
+                  placeholder="Enter your password"
+                  autoFocus
+                  required
+                />
+              </div>
 
-          <Button type="submit" className="w-full py-3 text-base" disabled={submitting}>
-            {submitting ? "Signing in..." : "Log in"}
-          </Button>
+              {error ? <p className="text-sm text-red-400">{error}</p> : null}
+
+              <div className="pt-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep(1);
+                    setPassword("");
+                    setError("");
+                  }}
+                  className="px-4 py-3 rounded-full border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                >
+                  <ArrowLeft size={20} />
+                </button>
+                <Button
+                  type="submit"
+                  className="w-full py-3 text-base flex-1"
+                  disabled={submitting}
+                >
+                  {submitting ? "Signing in..." : "Log in"}
+                </Button>
+              </div>
+            </div>
+          )}
         </form>
 
         <div className="flex items-center gap-3 text-xs text-zinc-500 my-6">
@@ -105,10 +172,16 @@ export default function Login() {
         </div>
 
         <div className="flex flex-col gap-3">
-          <a href={google} className="px-4 py-3 rounded-full bg-zinc-100 text-black font-bold text-center shadow-lg shadow-zinc-900/50">
+          <a
+            href={google}
+            className="px-4 py-3 rounded-full bg-zinc-100 text-black font-bold text-center shadow-lg shadow-zinc-900/50"
+          >
             Continue with Google
           </a>
-          <a href={facebook} className="px-4 py-3 rounded-full bg-zinc-800 text-white font-bold text-center border border-zinc-700">
+          <a
+            href={facebook}
+            className="px-4 py-3 rounded-full bg-zinc-800 text-white font-bold text-center border border-zinc-700"
+          >
             Continue with Facebook
           </a>
         </div>

@@ -13,6 +13,11 @@ export default function News() {
     navigate(`/profile/${userId}`);
   };
 
+  const handlePostClick = (post) => {
+    if (!post?.slug) return;
+    navigate(`/posts/${post.slug}`);
+  };
+
   return (
     <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
       {loading ? <Loading message="Loading news..." /> : null}
@@ -23,6 +28,7 @@ export default function News() {
           emptyTitle="No news found."
           emptySubtitle="Check back later for updates."
           onUserClick={handleUserClick}
+          onPostClick={handlePostClick}
         />
       ) : null}
     </main>
