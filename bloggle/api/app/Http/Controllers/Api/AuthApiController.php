@@ -55,4 +55,24 @@ class AuthApiController extends Controller
             'user' => UserPayload::from($user),
         ]);
     }
+
+    public function lookup(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'string', 'email'],
+        ]);
+
+        $user = User::where('email', $validated['email'])->first();
+
+        if (! $user) {
+            return response()->json([
+                'exists' => false,
+            ]);
+        }
+
+        return response()->json([
+            'exists' => true,
+            'user' => UserPayload::from($user),
+        ]);
+    }
 }

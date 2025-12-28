@@ -40,6 +40,9 @@ class PostResource extends JsonResource
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
+                    'avatar_url' => $user->avatar_path
+                        ? Storage::disk('public')->url($user->avatar_path)
+                        : null,
                 ];
             }),
             'news_source' => $this->whenLoaded('newsSource', function () {

@@ -12,7 +12,9 @@ export default function Login() {
   const notice = location.state?.message ?? "";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [lookupUser, setLookupUser] = useState(null);
   const [step, setStep] = useState(1);
+  const [checking, setChecking] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -32,11 +34,43 @@ export default function Login() {
     return trimmed.slice(0, 2).toUpperCase();
   }, [email]);
 
-  const handleNext = (event) => {
+  const handleNext = async (event) => {
     event.preventDefault();
-    if (!email.trim()) return;
-    setStep(2);
+    if (checking) return;
+
+    const trimmed = email.trim();
+
+    if (!trimmed) {
+      setError("Email is required.");
+      return;
+    }
+
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(trimmed)) {
+      setError("Enter a valid email address.");
+      return;
+    }
+
+    setChecking(true);
     setError("");
+
+    try {
+      const data = await api("/api/auth/lookup", {
+        method: "POST",
+        body: { email: trimmed },
+      });
+
+      if (!data?.exists) {
+        setError("No account found for that email.");
+        return;
+      }
+
+      setLookupUser(data.user ?? null);
+      setStep(2);
+    } catch (err) {
+      setError(err?.data?.message || err.message || "Unable to find that account.");
+    } finally {
+      setChecking(false);
+    }
   };
 
   const handleSubmit = async (event) => {
@@ -94,18 +128,31 @@ export default function Login() {
                 />
               </div>
               <div className="pt-4">
-                <Button className="w-full py-3 text-base">Next</Button>
+                {error ? <p className="text-sm text-red-400 mt-3">{error}</p> : null}
+                <Button className="w-full py-3 text-base" disabled={checking}>
+                  {checking ? "Checking..." : "Next"}
+                </Button>
               </div>
             </div>
           ) : (
             <div className="animate-in fade-in slide-in-from-right duration-300">
               <div className="flex items-center justify-between bg-zinc-800/50 rounded-xl p-3 border border-zinc-800 mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-xs font-bold text-white">
-                    {emailInitials || "?"}
+                  <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-xs font-bold text-white overflow-hidden">
+                    {lookupUser?.avatar_url ? (
+                      <img
+                        src={lookupUser.avatar_url}
+                        alt={lookupUser?.name ?? email}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      emailInitials || "?"
+                    )}
                   </div>
                   <div className="text-sm">
-                    <p className="text-white font-medium">{email}</p>
+                    <p className="text-white font-medium">
+                      {lookupUser?.name ?? email}
+                    </p>
                     <p className="text-zinc-500 text-xs">Signing in</p>
                   </div>
                 </div>
@@ -114,6 +161,7 @@ export default function Login() {
                   onClick={() => {
                     setStep(1);
                     setPassword("");
+                    setLookupUser(null);
                     setError("");
                   }}
                   className="text-xs font-medium text-zinc-400 hover:text-white transition-colors"
@@ -147,6 +195,7 @@ export default function Login() {
                   onClick={() => {
                     setStep(1);
                     setPassword("");
+                    setLookupUser(null);
                     setError("");
                   }}
                   className="px-4 py-3 rounded-full border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"

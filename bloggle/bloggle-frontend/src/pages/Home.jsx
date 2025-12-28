@@ -1,5 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { api } from "../lib/api";
 import { useAuth } from "../lib/auth.jsx";
 import useFeed from "../lib/hooks/useFeed";
 import FeedList from "../components/FeedList.jsx";
@@ -8,9 +9,11 @@ import Loading from "../components/Loading.jsx";
 import ErrorState from "../components/ErrorState.jsx";
 
 export default function Home() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const navigate = useNavigate();
   const { items, setItems, loading, error } = useFeed("/api/posts");
+  const [voteError, setVoteError] = useState("");
+  const [voteBusy, setVoteBusy] = useState(false);
 
   const posts = useMemo(
     () => items.filter((post) => post.type !== "news"),
@@ -32,12 +35,48 @@ export default function Home() {
     navigate(`/posts/${post.slug}`);
   };
 
+  const handleInteraction = async (postId, type) => {
+    if (voteBusy) return;
+    const target = items.find((post) => post.id === postId);
+    if (!target?.slug) return;
+
+    if (!token) {
+      navigate("/login", {
+        replace: false,
+        state: { message: "Please sign in to vote." },
+      });
+      return;
+    }
+
+    const value = type === "likes" ? 1 : -1;
+    setVoteBusy(true);
+    setVoteError("");
+
+    try {
+      const data = await api(`/api/posts/${target.slug}/vote`, {
+        method: "POST",
+        body: { value },
+      });
+
+      setItems((prev) =>
+        prev.map((post) =>
+          post.id === postId ? { ...post, score: data?.score ?? post.score } : post
+        )
+      );
+    } catch (err) {
+      setVoteError(err?.data?.message || err.message || "Unable to vote.");
+    } finally {
+      setVoteBusy(false);
+    }
+  };
+
   return (
     <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
       <PostComposer onCreated={handleCreated} />
 
       {loading ? <Loading message="Loading posts..." /> : null}
       {error ? <ErrorState message={error} /> : null}
+      {voteError ? <ErrorState message={voteError} /> : null}
       {!loading && !error ? (
         <FeedList
           items={posts}
@@ -45,6 +84,7 @@ export default function Home() {
           emptyTitle="No posts found."
           onUserClick={handleUserClick}
           onPostClick={handlePostClick}
+          onInteraction={handleInteraction}
         />
       ) : null}
     </main>

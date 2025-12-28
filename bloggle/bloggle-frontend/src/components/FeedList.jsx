@@ -6,6 +6,7 @@ export default function FeedList({
   emptySubtitle,
   currentUserId,
   onPostClick,
+  onInteraction,
   onUserClick,
 }) {
   if (!items || items.length === 0) {
@@ -31,6 +32,7 @@ export default function FeedList({
             author={author}
             isOwner={isOwner}
             onClick={onPostClick ? () => onPostClick(post) : undefined}
+            onInteraction={onInteraction ? (postId, type) => onInteraction(postId, type) : undefined}
             onUserClick={onUserClick}
           />
         );

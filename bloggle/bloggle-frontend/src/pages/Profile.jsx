@@ -33,14 +33,18 @@ export default function Profile() {
 
   const [followBusy, setFollowBusy] = useState(false);
   const [followError, setFollowError] = useState("");
+  const [voteError, setVoteError] = useState("");
+  const [voteBusy, setVoteBusy] = useState(false);
 
   const {
     items: feedPosts,
+    setItems: setFeedPosts,
     loading: postsLoading,
     error: postsError,
   } = useFeed("/api/posts");
   const {
     items: followingFeed,
+    setItems: setFollowingFeed,
     loading: followingLoading,
     error: followingError,
   } = useFeed("/api/feed/following");
@@ -191,6 +195,42 @@ export default function Profile() {
     navigate(`/posts/${post.slug}`);
   };
 
+  const handleInteraction = async (postId, type) => {
+    if (voteBusy) return;
+    const target =
+      feedPosts.find((post) => post.id === postId) ??
+      followingFeed.find((post) => post.id === postId);
+    if (!target?.slug) return;
+
+    const value = type === "likes" ? 1 : -1;
+    setVoteBusy(true);
+    setVoteError("");
+
+    try {
+      const data = await api(`/api/posts/${target.slug}/vote`, {
+        method: "POST",
+        body: { value },
+      });
+
+      const nextScore = data?.score ?? target.score;
+
+      setFeedPosts((prev) =>
+        prev.map((post) =>
+          post.id === postId ? { ...post, score: nextScore } : post
+        )
+      );
+      setFollowingFeed((prev) =>
+        prev.map((post) =>
+          post.id === postId ? { ...post, score: nextScore } : post
+        )
+      );
+    } catch (err) {
+      setVoteError(err?.data?.message || err.message || "Unable to vote.");
+    } finally {
+      setVoteBusy(false);
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto px-0 sm:px-4 py-4 sm:py-8 animate-in slide-in-from-right-4 duration-300">
       <Link
@@ -253,6 +293,7 @@ export default function Profile() {
       </div>
 
       {followError ? <ErrorState message={followError} /> : null}
+      {voteError ? <ErrorState message={voteError} /> : null}
 
       {isSelf ? (
         <form
@@ -318,6 +359,7 @@ export default function Profile() {
               currentUserId={user?.id}
               onUserClick={handleUserClick}
               onPostClick={handlePostClick}
+              onInteraction={handleInteraction}
             />
           )
         ) : isSelf ? (
@@ -333,6 +375,7 @@ export default function Profile() {
               currentUserId={user?.id}
               onUserClick={handleUserClick}
               onPostClick={handlePostClick}
+              onInteraction={handleInteraction}
             />
           )
         ) : (

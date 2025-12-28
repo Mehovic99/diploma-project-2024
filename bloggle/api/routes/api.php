@@ -18,6 +18,7 @@ Route::get('/posts/{slug}/comments', [CommentController::class, 'index']);
 Route::get('/news', [NewsController::class, 'index']);
 Route::post('/auth/register', [AuthApiController::class, 'register']);
 Route::post('/auth/login', [AuthApiController::class, 'login']);
+Route::post('/auth/lookup', [AuthApiController::class, 'lookup']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/posts', [PostController::class, 'store']);
