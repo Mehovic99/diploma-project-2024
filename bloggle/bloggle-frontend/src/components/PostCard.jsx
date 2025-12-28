@@ -36,6 +36,7 @@ export default function PostCard({
   const dislikes = typeof post.dislikes === "number" ? post.dislikes : 0;
   const score =
     typeof post.score === "number" ? post.score : Number(likes) - Number(dislikes);
+  const userVote = typeof post.user_vote === "number" ? post.user_vote : 0;
   const commentsCount =
     post.comments?.length ??
     post.comments_count ??
@@ -134,7 +135,7 @@ export default function PostCard({
               >
                 <ArrowBigUp
                   size={20}
-                  className={likes > 0 ? "fill-orange-500/20 text-orange-500" : ""}
+                  className={userVote === 1 ? "fill-orange-500/20 text-orange-500" : ""}
                 />
               </button>
               <span
@@ -154,7 +155,7 @@ export default function PostCard({
               >
                 <ArrowBigDown
                   size={20}
-                  className={dislikes > 0 ? "fill-blue-500/20 text-blue-500" : ""}
+                  className={userVote === -1 ? "fill-blue-500/20 text-blue-500" : ""}
                 />
               </button>
             </div>

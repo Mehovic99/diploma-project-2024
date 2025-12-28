@@ -221,16 +221,29 @@ export default function Profile() {
       typeof target.score === "number"
         ? target.score
         : Number(target.likes ?? 0) - Number(target.dislikes ?? 0);
-    const optimisticScore = currentScore + value;
+    const currentVote = typeof target.user_vote === "number" ? target.user_vote : 0;
+    const nextVote =
+      value === 1
+        ? currentVote === 1
+          ? 0
+          : 1
+        : currentVote === -1
+          ? 0
+          : -1;
+    const optimisticScore = currentScore + (nextVote - currentVote);
 
     setFeedPosts((prev) =>
       prev.map((post) =>
-        post.id === postId ? { ...post, score: optimisticScore } : post
+        post.id === postId
+          ? { ...post, score: optimisticScore, user_vote: nextVote }
+          : post
       )
     );
     setFollowingFeed((prev) =>
       prev.map((post) =>
-        post.id === postId ? { ...post, score: optimisticScore } : post
+        post.id === postId
+          ? { ...post, score: optimisticScore, user_vote: nextVote }
+          : post
       )
     );
     setVoteBusy(true);
@@ -243,26 +256,36 @@ export default function Profile() {
       });
 
       const nextScore = typeof data?.score === "number" ? data.score : optimisticScore;
+      const nextVoteFromServer =
+        typeof data?.user_vote === "number" ? data.user_vote : 0;
 
       setFeedPosts((prev) =>
         prev.map((post) =>
-          post.id === postId ? { ...post, score: nextScore } : post
+          post.id === postId
+            ? { ...post, score: nextScore, user_vote: nextVoteFromServer }
+            : post
         )
       );
       setFollowingFeed((prev) =>
         prev.map((post) =>
-          post.id === postId ? { ...post, score: nextScore } : post
+          post.id === postId
+            ? { ...post, score: nextScore, user_vote: nextVoteFromServer }
+            : post
         )
       );
     } catch (err) {
       setFeedPosts((prev) =>
         prev.map((post) =>
-          post.id === postId ? { ...post, score: currentScore } : post
+          post.id === postId
+            ? { ...post, score: currentScore, user_vote: currentVote }
+            : post
         )
       );
       setFollowingFeed((prev) =>
         prev.map((post) =>
-          post.id === postId ? { ...post, score: currentScore } : post
+          post.id === postId
+            ? { ...post, score: currentScore, user_vote: currentVote }
+            : post
         )
       );
       setVoteError(err?.data?.message || err.message || "Unable to vote.");

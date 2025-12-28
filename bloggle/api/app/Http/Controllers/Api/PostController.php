@@ -18,9 +18,16 @@ class PostController extends Controller
     ) {
     }
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $posts = $this->postRepository->paginateFeed(20);
+        $user = $request->user();
+
+        if ($user) {
+            $posts->getCollection()->load([
+                'votes' => fn ($query) => $query->where('user_id', $user->id),
+            ]);
+        }
 
         return PostResource::collection($posts)->response();
     }
@@ -33,7 +40,15 @@ class PostController extends Controller
             abort(404);
         }
 
-        $post->load(['user', 'newsSource']);
+        $user = $request->user();
+
+        $relations = ['user', 'newsSource'];
+
+        if ($user) {
+            $relations['votes'] = fn ($query) => $query->where('user_id', $user->id);
+        }
+
+        $post->load($relations);
 
         $commentsPaginator = $this->commentRepository->paginateForPost(
             $post,

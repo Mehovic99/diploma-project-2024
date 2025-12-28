@@ -61,6 +61,11 @@ export default function PostDetail() {
     };
   }, [slug]);
 
+  useEffect(() => {
+    if (!post) return;
+    setUserVote(typeof post.user_vote === "number" ? post.user_vote : 0);
+  }, [post]);
+
   const author = post?.author ?? {};
   const authorName = author?.name ?? "Unknown";
   const authorUsername = getUsername(author);
@@ -136,11 +141,19 @@ export default function PostDetail() {
       typeof post.score === "number"
         ? post.score
         : Number(post.likes ?? 0) - Number(post.dislikes ?? 0);
-    const optimisticScore = currentScore + value;
     const previousVote = userVote;
+    const nextVote =
+      value === 1
+        ? previousVote === 1
+          ? 0
+          : 1
+        : previousVote === -1
+          ? 0
+          : -1;
+    const optimisticScore = currentScore + (nextVote - previousVote);
 
     setPost((prev) => (prev ? { ...prev, score: optimisticScore } : prev));
-    setUserVote(value);
+    setUserVote(nextVote);
     setVoteBusy(true);
     setActionError("");
 
@@ -151,8 +164,10 @@ export default function PostDetail() {
       });
 
       const nextScore = typeof data?.score === "number" ? data.score : optimisticScore;
+      const nextVoteFromServer =
+        typeof data?.user_vote === "number" ? data.user_vote : 0;
       setPost((prev) => (prev ? { ...prev, score: nextScore } : prev));
-      setUserVote(data?.user_vote ?? value);
+      setUserVote(nextVoteFromServer);
     } catch (err) {
       setPost((prev) => (prev ? { ...prev, score: currentScore } : prev));
       setUserVote(previousVote);

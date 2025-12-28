@@ -20,7 +20,10 @@ class FeedController extends Controller
             ->whereIn('user_id', $followingIds)
             ->where('type', 'user_post')
             ->orderByDesc('created_at')
-            ->with('user')
+            ->with([
+                'user',
+                'votes' => fn ($query) => $query->where('user_id', $user->id),
+            ])
             ->paginate(20);
 
         return PostResource::collection($posts)->response();
