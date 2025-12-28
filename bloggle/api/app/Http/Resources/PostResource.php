@@ -45,8 +45,8 @@ class PostResource extends JsonResource
                         : null,
                 ];
             }),
-            'user_vote' => $request->user()
-                ? ($this->relationLoaded('votes') ? $this->votes->first()?->value : null)
+            'user_vote' => $this->relationLoaded('votes')
+                ? $this->votes->first()?->value
                 : null,
             'news_source' => $this->whenLoaded('newsSource', function () {
                 $newsSource = $this->newsSource;

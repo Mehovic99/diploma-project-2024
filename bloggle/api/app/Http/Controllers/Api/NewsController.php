@@ -18,7 +18,7 @@ class NewsController extends Controller
     public function index(Request $request): JsonResponse
     {
         $newsPosts = $this->postRepository->paginateNews(20);
-        $user = $request->user();
+        $user = auth('sanctum')->user();
 
         if ($user) {
             $newsPosts->getCollection()->load([

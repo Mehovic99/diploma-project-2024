@@ -21,7 +21,7 @@ class PostController extends Controller
     public function index(Request $request): JsonResponse
     {
         $posts = $this->postRepository->paginateFeed(20);
-        $user = $request->user();
+        $user = auth('sanctum')->user();
 
         if ($user) {
             $posts->getCollection()->load([
@@ -40,7 +40,7 @@ class PostController extends Controller
             abort(404);
         }
 
-        $user = $request->user();
+        $user = auth('sanctum')->user();
 
         $relations = ['user', 'newsSource'];
 

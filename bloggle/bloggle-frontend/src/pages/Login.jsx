@@ -108,7 +108,11 @@ export default function Login() {
 
         {notice ? <p className="text-sm text-amber-300 mb-4">{notice}</p> : null}
 
-        <form onSubmit={step === 1 ? handleNext : handleSubmit} className="space-y-4">
+        <form
+          onSubmit={step === 1 ? handleNext : handleSubmit}
+          className="space-y-4"
+          noValidate
+        >
           {step === 1 ? (
             <div className="animate-in fade-in slide-in-from-right duration-300">
               <div>
@@ -117,7 +121,8 @@ export default function Login() {
                 </label>
                 <input
                   id="email"
-                  type="email"
+                  type="text"
+                  inputMode="email"
                   autoComplete="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
