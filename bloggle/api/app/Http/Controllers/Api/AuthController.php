@@ -59,6 +59,8 @@ class AuthController extends Controller
 
         $name = $socialUser->getName() ?: ($email ?: 'User');
 
+        $isNewUser = false;
+
         $oauthIdentity = OAuthIdentity::where('provider', $provider)
             ->where('provider_user_id', $providerUserId)
             ->first();
@@ -74,6 +76,7 @@ class AuthController extends Controller
                     'email' => $email,
                     'password' => Hash::make(Str::random(32)),
                 ]);
+                $isNewUser = true;
             }
 
             $tokenExpiresAt = $socialUser->expiresIn ? now()->addSeconds($socialUser->expiresIn) : null;
@@ -90,7 +93,13 @@ class AuthController extends Controller
 
         $token = $user->createToken('api')->plainTextToken;
 
-        return redirect()->away($frontend . '/oauth/callback?token=' . urlencode($token));
+        $redirectUrl = $frontend . '/oauth/callback?token=' . urlencode($token);
+
+        if ($isNewUser) {
+            $redirectUrl .= '&new=1';
+        }
+
+        return redirect()->away($redirectUrl);
     }
 
     public function me(Request $request): JsonResponse

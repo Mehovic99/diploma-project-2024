@@ -12,6 +12,13 @@ export function getInitials(name) {
 export function getUsername(user) {
   if (!user) return "user";
   if (user.username) return user.username;
-  if (user.name) return user.name.replace(/\s+/g, "").toLowerCase();
+  if (user.name) {
+    const trimmed = user.name.trim();
+    if (!trimmed) return "user";
+    if (trimmed.includes("@")) {
+      return "user";
+    }
+    return trimmed.replace(/\s+/g, "").toLowerCase();
+  }
   return "user";
 }

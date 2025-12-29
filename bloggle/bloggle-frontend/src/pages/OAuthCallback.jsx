@@ -7,6 +7,7 @@ export default function OAuthCallback() {
   const navigate = useNavigate();
   const { loginWithToken } = useAuth();
   const token = searchParams.get("token");
+  const isNewUser = searchParams.get("new") === "1";
 
   useEffect(() => {
     if (!token) {
@@ -19,7 +20,7 @@ export default function OAuthCallback() {
     (async () => {
       try {
         await loginWithToken(token);
-        navigate("/", { replace: true });
+        navigate(isNewUser ? "/profile/me?setup=1" : "/", { replace: true });
       } catch {
         navigate("/login", { replace: true });
       }
