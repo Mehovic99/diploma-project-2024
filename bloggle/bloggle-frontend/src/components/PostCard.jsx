@@ -56,9 +56,10 @@ export default function PostCard({
   const normalizedTitle = normalizeText(title);
   const normalizedBodyHtml = normalizeText(bodyHtml);
   const normalizedBodyText = normalizeText(bodyText);
-  const showBodyHtml = bodyHtml && normalizedBodyHtml !== normalizedTitle;
+  const showBodyHtml =
+    !isNews && bodyHtml && normalizedBodyHtml !== normalizedTitle;
   const showBodyText =
-    !showBodyHtml && bodyText && normalizedBodyText !== normalizedTitle;
+    !isNews && !showBodyHtml && bodyText && normalizedBodyText !== normalizedTitle;
 
   useEffect(() => {
     return () => {
