@@ -49,6 +49,8 @@ class NewsIngestService
                     continue;
                 }
 
+                $article = $this->enrichArticleDetails($article);
+
                 $this->storePost($newsSource, $article);
                 $created++;
             } catch (\Throwable $exception) {
@@ -139,6 +141,14 @@ class NewsIngestService
 
             if ($imageUrl && $bodyHtml) {
                 $bodyHtml = $this->stripFirstImageTag($bodyHtml);
+            }
+
+            if ($bodyHtml) {
+                $bodyText = $this->normalizeText($bodyHtml);
+                $titleText = $this->normalizeText($title);
+                if ($bodyText !== '' && $bodyText === $titleText) {
+                    $bodyHtml = null;
+                }
             }
 
             if ($title === '' || $link === '') {
@@ -334,6 +344,228 @@ class NewsIngestService
         return $post;
     }
 
+    private function enrichArticleDetails(array $article): array
+    {
+        if (!$this->needsArticleDetails($article)) {
+            return $article;
+        }
+
+        try {
+            $details = $this->fetchArticleDetails($article['url']);
+        } catch (\Throwable) {
+            return $article;
+        }
+
+        if ($this->needsArticleBody($article) && !empty($details['body_html'])) {
+            $article['body_html'] = $details['body_html'];
+        }
+
+        if (empty($article['image_url']) && !empty($details['image_url'])) {
+            $article['image_url'] = $details['image_url'];
+        }
+
+        $titleText = $this->normalizeText($article['title'] ?? '');
+        $bodyText = $this->normalizeText($article['body_html'] ?? null);
+
+        if ($bodyText !== '' && $bodyText === $titleText) {
+            $article['body_html'] = null;
+        }
+
+        if (!empty($article['image_url']) && !empty($article['body_html'])) {
+            $article['body_html'] = $this->stripFirstImageTag($article['body_html']);
+        }
+
+        return $article;
+    }
+
+    private function needsArticleDetails(array $article): bool
+    {
+        if ($this->needsArticleBody($article)) {
+            return true;
+        }
+
+        return empty($article['image_url']);
+    }
+
+    private function needsArticleBody(array $article): bool
+    {
+        $bodyText = $this->normalizeText($article['body_html'] ?? null);
+        $titleText = $this->normalizeText($article['title'] ?? null);
+
+        if ($bodyText === '') {
+            return true;
+        }
+
+        if ($bodyText === $titleText) {
+            return true;
+        }
+
+        return strlen($bodyText) < 60;
+    }
+
+    /**
+     * @return array{body_html: string|null, image_url: string|null}
+     */
+    private function fetchArticleDetails(string $url): array
+    {
+        $response = Http::withHeaders([
+            'User-Agent' => self::USER_AGENT,
+            'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        ])->timeout(10)->get($url);
+
+        if (!$response->successful()) {
+            throw new \RuntimeException('Failed to fetch Klix article: HTTP ' . $response->status());
+        }
+
+        $body = $response->body();
+
+        if (trim($body) === '') {
+            throw new \RuntimeException('Klix article response is empty.');
+        }
+
+        return $this->parseArticleHtml($body);
+    }
+
+    /**
+     * @return array{body_html: string|null, image_url: string|null}
+     */
+    private function parseArticleHtml(string $html): array
+    {
+        $document = new DOMDocument();
+        $previous = libxml_use_internal_errors(true);
+        $document->loadHTML($html);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+
+        $xpath = new DOMXPath($document);
+        $imageUrl = $this->extractMetaImage($xpath);
+
+        [$bodyHtml, $bodyImage] = $this->extractArticleBodyHtml($xpath);
+
+        if (!$imageUrl && $bodyImage) {
+            $imageUrl = $bodyImage;
+        }
+
+        if (!$imageUrl && $bodyHtml) {
+            $imageUrl = $this->extractImageFromHtml($bodyHtml);
+        }
+
+        if ($bodyHtml) {
+            $bodyText = $this->normalizeText($bodyHtml);
+            if (strlen($bodyText) < 60) {
+                $bodyHtml = null;
+            }
+        }
+
+        return [
+            'body_html' => $bodyHtml,
+            'image_url' => $imageUrl,
+        ];
+    }
+
+    private function extractMetaImage(DOMXPath $xpath): ?string
+    {
+        $candidates = ['og:image', 'twitter:image', 'twitter:image:src'];
+
+        foreach ($candidates as $candidate) {
+            $nodes = $xpath->query("//meta[@property='{$candidate}']/@content | //meta[@name='{$candidate}']/@content");
+            if ($nodes->length > 0) {
+                $value = trim($nodes->item(0)->nodeValue ?? '');
+                if ($value !== '') {
+                    return $value;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{0: string|null, 1: string|null}
+     */
+    private function extractArticleBodyHtml(DOMXPath $xpath): array
+    {
+        $selectors = [
+            "//div[contains(@class,'article-body')]",
+            "//div[contains(@class,'article__body')]",
+            "//div[contains(@class,'article-content')]",
+            "//div[contains(@class,'article__content')]",
+            "//div[contains(@class,'post-content')]",
+            "//div[contains(@class,'post-body')]",
+            "//div[contains(@class,'entry-content')]",
+            "//article",
+        ];
+
+        foreach ($selectors as $selector) {
+            $nodes = $xpath->query($selector);
+            if (!$nodes || $nodes->length === 0) {
+                continue;
+            }
+
+            foreach ($nodes as $node) {
+                if (!$node instanceof DOMElement) {
+                    continue;
+                }
+
+                $rawHtml = $this->innerHtml($node);
+                $imageUrl = $rawHtml ? $this->extractImageFromHtml($rawHtml) : null;
+
+                $this->stripElements($node, [
+                    'script',
+                    'style',
+                    'figure',
+                    'img',
+                    'picture',
+                    'source',
+                    'svg',
+                    'video',
+                    'iframe',
+                    'aside',
+                    'nav',
+                    'header',
+                    'footer',
+                ]);
+
+                $cleanHtml = $this->innerHtml($node);
+                $text = $this->normalizeText($cleanHtml);
+
+                if ($text !== '' && strlen($text) >= 60) {
+                    return [$cleanHtml, $imageUrl];
+                }
+            }
+        }
+
+        return [null, null];
+    }
+
+    private function stripElements(DOMElement $root, array $tags): void
+    {
+        $xpath = new DOMXPath($root->ownerDocument);
+
+        foreach ($tags as $tag) {
+            $nodes = $xpath->query('.//' . $tag, $root);
+            if (!$nodes) {
+                continue;
+            }
+
+            foreach ($nodes as $node) {
+                if ($node->parentNode) {
+                    $node->parentNode->removeChild($node);
+                }
+            }
+        }
+    }
+
+    private function innerHtml(DOMElement $element): string
+    {
+        $html = '';
+        foreach ($element->childNodes as $child) {
+            $html .= $element->ownerDocument->saveHTML($child);
+        }
+
+        return trim($html);
+    }
+
     private function extractImageFromRss(\SimpleXMLElement $item): ?string
     {
         $media = $item->children('media', true);
@@ -386,6 +618,18 @@ class NewsIngestService
     private function stripFirstImageTag(string $html): string
     {
         return preg_replace('/<img[^>]*>/i', '', $html, 1) ?? $html;
+    }
+
+    private function normalizeText(?string $value): string
+    {
+        if (!$value) {
+            return '';
+        }
+
+        $decoded = html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $decoded = preg_replace('/\s+/', ' ', $decoded) ?? $decoded;
+
+        return trim($decoded);
     }
 
     private function generateSlug(string $title): string
