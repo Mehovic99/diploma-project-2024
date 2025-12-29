@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Calendar, MapPin } from "lucide-react";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth.jsx";
@@ -10,12 +10,15 @@ import Button from "../components/Button.jsx";
 import FeedList from "../components/FeedList.jsx";
 import Loading from "../components/Loading.jsx";
 import ErrorState from "../components/ErrorState.jsx";
+import ProfileEditor from "../components/ProfileEditor.jsx";
 
 export default function Profile() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, bootstrapMe } = useAuth();
   const isSelf = id === "me" || (user && String(user.id) === id);
+  const isOnboarding = isSelf && searchParams.get("setup") === "1";
 
   const [profileUser, setProfileUser] = useState(null);
   const [followingUsers, setFollowingUsers] = useState([]);
@@ -167,6 +170,38 @@ export default function Profile() {
     }
   };
 
+  const handleProfileSave = async ({ name, bio, avatarFile }) => {
+    const updates = {};
+    const trimmedName = name?.trim();
+
+    if (trimmedName) {
+      updates.name = trimmedName;
+    }
+
+    if (typeof bio === "string") {
+      updates.bio = bio.trim() ? bio.trim() : null;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await api("/api/users/me", {
+        method: "PATCH",
+        body: updates,
+      });
+    }
+
+    if (avatarFile) {
+      const formData = new FormData();
+      formData.append("avatar", avatarFile);
+      await api("/api/users/me/avatar", {
+        method: "POST",
+        body: formData,
+      });
+    }
+
+    await bootstrapMe();
+    navigate("/profile/me", { replace: true });
+  };
+
   const handleToggleFollow = async () => {
     if (!profileUser || followBusy) return;
 
@@ -208,6 +243,18 @@ export default function Profile() {
   const handlePostClick = (post) => {
     if (!post?.slug) return;
     navigate(`/posts/${post.slug}`);
+  };
+
+  const handleDeletePost = async (post) => {
+    if (!post?.slug) return;
+
+    try {
+      await api(`/api/posts/${post.slug}`, { method: "DELETE" });
+      setFeedPosts((prev) => prev.filter((entry) => entry.id !== post.id));
+      setFollowingFeed((prev) => prev.filter((entry) => entry.id !== post.id));
+    } catch (err) {
+      throw err;
+    }
   };
 
   const processVoteQueue = useCallback(
@@ -315,6 +362,16 @@ export default function Profile() {
       processVoteQueue(postId);
     }
   };
+
+  if (isOnboarding) {
+    if (!user) {
+      return <Loading message="Loading profile..." />;
+    }
+
+    return (
+      <ProfileEditor user={user} isOnboarding onSave={handleProfileSave} />
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto px-0 sm:px-4 py-4 sm:py-8 animate-in slide-in-from-right-4 duration-300">
@@ -445,6 +502,7 @@ export default function Profile() {
               onUserClick={handleUserClick}
               onPostClick={handlePostClick}
               onInteraction={handleInteraction}
+              onDelete={handleDeletePost}
             />
           )
         ) : isSelf ? (
@@ -461,6 +519,7 @@ export default function Profile() {
               onUserClick={handleUserClick}
               onPostClick={handlePostClick}
               onInteraction={handleInteraction}
+              onDelete={handleDeletePost}
             />
           )
         ) : (

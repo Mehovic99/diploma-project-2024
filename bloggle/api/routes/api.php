@@ -22,6 +22,7 @@ Route::post('/auth/lookup', [AuthApiController::class, 'lookup']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/posts', [PostController::class, 'store']);
+    Route::delete('/posts/{slug}', [PostController::class, 'destroy']);
     Route::post('/posts/{slug}/comments', [CommentController::class, 'store']);
     Route::post('/posts/{slug}/vote', [VoteController::class, 'votePost']);
     Route::post('/comments/{id}/vote', [VoteController::class, 'voteComment']);
@@ -30,6 +31,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reports', [ReportController::class, 'index']);
     Route::post('/reports/{id}/resolve', [ReportController::class, 'resolve']);
     Route::post('/users/me/avatar', [UserController::class, 'updateAvatar']);
+    Route::patch('/users/me', [UserController::class, 'updateProfile']);
     Route::get('/feed/following', [FeedController::class, 'following']);
     Route::post('/users/{id}/follow', [FollowController::class, 'follow']);
     Route::delete('/users/{id}/follow', [FollowController::class, 'unfollow']);

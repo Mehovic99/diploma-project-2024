@@ -38,7 +38,7 @@ export default function Register() {
         },
       });
       await loginWithToken(data.token);
-      navigate("/", { replace: true });
+      navigate("/profile/me?setup=1", { replace: true });
     } catch (err) {
       setError(err?.data?.message || err.message || "Registration failed.");
     } finally {

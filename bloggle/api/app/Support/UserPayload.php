@@ -19,6 +19,7 @@ class UserPayload
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
+            'bio' => $user->bio,
             'avatar_url' => $avatarUrl,
         ];
     }

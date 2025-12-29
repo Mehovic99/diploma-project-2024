@@ -36,6 +36,24 @@ export default function Home() {
     navigate(`/posts/${post.slug}`);
   };
 
+  const handleDeletePost = async (post) => {
+    if (!post?.slug) return;
+    if (!token) {
+      navigate("/login", {
+        replace: false,
+        state: { message: "Please sign in to delete posts." },
+      });
+      return;
+    }
+
+    try {
+      await api(`/api/posts/${post.slug}`, { method: "DELETE" });
+      setItems((prev) => prev.filter((entry) => entry.id !== post.id));
+    } catch (err) {
+      throw err;
+    }
+  };
+
   const processVoteQueue = useCallback(
     async function runQueue(postId) {
       const queue = voteQueueRef.current.get(postId);
@@ -144,6 +162,7 @@ export default function Home() {
           onUserClick={handleUserClick}
           onPostClick={handlePostClick}
           onInteraction={handleInteraction}
+          onDelete={handleDeletePost}
         />
       ) : null}
     </main>

@@ -86,4 +86,23 @@ class PostController extends Controller
             ->response()
             ->setStatusCode(201);
     }
+
+    public function destroy(Request $request, string $slug): JsonResponse
+    {
+        $post = $this->postRepository->findBySlug($slug);
+
+        if (!$post) {
+            abort(404);
+        }
+
+        $user = $request->user();
+
+        if (!$user || $post->user_id !== $user->id) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        $post->delete();
+
+        return response()->noContent();
+    }
 }

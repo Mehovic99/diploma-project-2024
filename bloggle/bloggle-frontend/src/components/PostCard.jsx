@@ -40,6 +40,9 @@ export default function PostCard({
     typeof post.score === "number" ? post.score : Number(likes) - Number(dislikes);
   const userVote = typeof post.user_vote === "number" ? post.user_vote : 0;
   const [toast, setToast] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
   const toastTimeoutRef = useRef(null);
 
   useEffect(() => {
@@ -83,6 +86,27 @@ export default function PostCard({
     toastTimeoutRef.current = setTimeout(() => setToast(""), 2000);
   };
 
+  const handleDeleteClick = (event) => {
+    event.stopPropagation();
+    setDeleteError("");
+    setConfirmDelete(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!onDelete) return;
+    setDeleting(true);
+    setDeleteError("");
+
+    try {
+      await onDelete();
+      setConfirmDelete(false);
+    } catch (err) {
+      setDeleteError(err?.data?.message || err.message || "Unable to delete post.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div
       onClick={onClick}
@@ -109,12 +133,9 @@ export default function PostCard({
               </div>
             </div>
           </div>
-          {isOwner ? (
+          {isOwner && onDelete ? (
             <button
-              onClick={(event) => {
-                event.stopPropagation();
-                onDelete?.();
-              }}
+              onClick={handleDeleteClick}
               className="text-zinc-600 hover:text-red-400 p-2 rounded-full hover:bg-zinc-800 transition-colors"
             >
               <Trash2 size={16} />
@@ -207,6 +228,41 @@ export default function PostCard({
       {toast ? (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-black text-white text-sm px-4 py-2 rounded-full border border-zinc-800 shadow-lg">
           {toast}
+        </div>
+      ) : null}
+      {confirmDelete ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => (!deleting ? setConfirmDelete(false) : null)}
+        >
+          <div
+            className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold text-white mb-2">Delete this post?</h3>
+            <p className="text-sm text-zinc-400 mb-6">
+              This action cannot be undone.
+            </p>
+            {deleteError ? <p className="text-sm text-red-400 mb-4">{deleteError}</p> : null}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={handleDeleteConfirm}
+                disabled={deleting}
+                className="flex-1 py-3 rounded-full bg-white text-black font-bold transition-colors disabled:opacity-60"
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                disabled={deleting}
+                className="flex-1 py-3 rounded-full bg-black text-white font-bold border border-zinc-800 transition-colors disabled:opacity-60"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       ) : null}
     </div>

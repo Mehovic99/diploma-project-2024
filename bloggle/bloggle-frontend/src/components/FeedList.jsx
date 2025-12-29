@@ -7,6 +7,7 @@ export default function FeedList({
   currentUserId,
   onPostClick,
   onInteraction,
+  onDelete,
   onUserClick,
 }) {
   if (!items || items.length === 0) {
@@ -34,6 +35,7 @@ export default function FeedList({
             onClick={onPostClick ? () => onPostClick(post) : undefined}
             onInteraction={onInteraction ? (postId, type) => onInteraction(postId, type) : undefined}
             onUserClick={onUserClick}
+            onDelete={onDelete ? () => onDelete(post) : undefined}
           />
         );
       })}

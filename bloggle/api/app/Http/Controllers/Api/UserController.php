@@ -25,4 +25,28 @@ class UserController extends Controller
             'user' => UserPayload::from($user),
         ]);
     }
+
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => ['sometimes', 'string', 'max:255'],
+            'bio' => ['nullable', 'string', 'max:300'],
+        ]);
+
+        $user = $request->user();
+
+        if (array_key_exists('name', $validated)) {
+            $user->name = $validated['name'];
+        }
+
+        if (array_key_exists('bio', $validated)) {
+            $user->bio = $validated['bio'];
+        }
+
+        $user->save();
+
+        return response()->json([
+            'user' => UserPayload::from($user),
+        ]);
+    }
 }
