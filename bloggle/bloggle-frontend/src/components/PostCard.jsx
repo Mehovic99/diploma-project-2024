@@ -26,8 +26,6 @@ export default function PostCard({
   const authorId = resolvedAuthor.id;
   const isNews = post.category === "news" || post.type === "news";
   const title = post.title ?? post.content ?? "";
-  const bodyHtml = post.body_html ?? "";
-  const bodyText = post.body_md ?? "";
   const imageUrl = post.image ?? post.image_url;
   const timestamp =
     post.timestamp ??
@@ -47,19 +45,6 @@ export default function PostCard({
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const toastTimeoutRef = useRef(null);
-  const normalizeText = (value) =>
-    String(value ?? "")
-      .replace(/<[^>]*>/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-      .toLowerCase();
-  const normalizedTitle = normalizeText(title);
-  const normalizedBodyHtml = normalizeText(bodyHtml);
-  const normalizedBodyText = normalizeText(bodyText);
-  const showBodyHtml =
-    !isNews && bodyHtml && normalizedBodyHtml !== normalizedTitle;
-  const showBodyText =
-    !isNews && !showBodyHtml && bodyText && normalizedBodyText !== normalizedTitle;
 
   useEffect(() => {
     return () => {
@@ -171,16 +156,6 @@ export default function PostCard({
             <h3 className="text-white mb-2 text-[15px] font-semibold leading-snug">
               {title}
             </h3>
-          ) : null}
-          {showBodyHtml ? (
-            <p
-              className="text-zinc-200 mb-3 text-[15px] leading-relaxed whitespace-pre-wrap"
-              dangerouslySetInnerHTML={{ __html: bodyHtml }}
-            />
-          ) : showBodyText ? (
-            <p className="text-zinc-200 mb-3 text-[15px] leading-relaxed whitespace-pre-wrap">
-              {bodyText}
-            </p>
           ) : null}
           {imageUrl ? (
             <div className="mb-3 rounded-xl overflow-hidden border border-zinc-800 bg-black">

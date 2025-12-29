@@ -35,7 +35,7 @@ export default function Navbar({ onRefresh, isRefreshing = false }) {
 
   return (
     <nav className="sticky top-0 z-50 bg-black/80 backdrop-blur-md border-b border-zinc-800">
-      <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div className="max-w-5xl mx-auto px-4 h-16 flex items-start justify-between">
         <NavLink to="/" className="flex items-center gap-3 cursor-pointer group">
           <img
             src={smallLogo}
@@ -45,7 +45,7 @@ export default function Navbar({ onRefresh, isRefreshing = false }) {
         </NavLink>
 
         {showTabs ? (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 self-center">
             <div className="flex gap-1 bg-zinc-900/50 p-1 rounded-full border border-zinc-800">
               <NavLink
                 to="/"
@@ -81,7 +81,7 @@ export default function Navbar({ onRefresh, isRefreshing = false }) {
           </div>
         ) : null}
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 self-center">
           {isAuthed ? (
             <div className="relative group">
               <button
