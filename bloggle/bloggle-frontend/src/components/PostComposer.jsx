@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Image as ImageIcon, Send, X } from "lucide-react";
+import { Check, Image as ImageIcon, Send, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth.jsx";
@@ -15,7 +15,6 @@ export default function PostComposer({ onCreated }) {
   const [body, setBody] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
   const [imageFile, setImageFile] = useState(null);
-  const [showImageInput, setShowImageInput] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -34,7 +33,6 @@ export default function PostComposer({ onCreated }) {
     setBody("");
     setLinkUrl("");
     setImageFile(null);
-    setShowImageInput(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -136,35 +134,29 @@ export default function PostComposer({ onCreated }) {
             />
           </div>
 
-          {showImageInput ? (
-            <div className="mt-3 relative animate-in fade-in slide-in-from-top-2">
-              <div className="flex gap-2 items-center">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  onChange={(event) => setImageFile(event.target.files?.[0] ?? null)}
-                  className="flex-1 bg-black border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowImageInput(false);
-                    setImageFile(null);
-                    if (fileInputRef.current) {
-                      fileInputRef.current.value = "";
-                    }
-                  }}
-                  className="p-2 text-zinc-500 hover:text-white"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-              {previewUrl ? (
-                <div className="mt-2 h-32 w-full rounded-lg bg-black border border-zinc-800 overflow-hidden flex items-center justify-center relative">
-                  <img src={previewUrl} alt="Preview" className="h-full object-cover" />
-                </div>
-              ) : null}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={(event) => setImageFile(event.target.files?.[0] ?? null)}
+            className="hidden"
+          />
+          {previewUrl ? (
+            <div className="mt-3 h-32 w-full rounded-lg bg-black border border-zinc-800 overflow-hidden flex items-center justify-center relative">
+              <img src={previewUrl} alt="Preview" className="h-full object-cover" />
+              <button
+                type="button"
+                onClick={() => {
+                  setImageFile(null);
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = "";
+                  }
+                }}
+                className="absolute top-2 right-2 p-1.5 rounded-full bg-black/70 text-zinc-200 hover:text-white"
+                aria-label="Remove image"
+              >
+                <X size={16} />
+              </button>
             </div>
           ) : null}
 
@@ -174,14 +166,17 @@ export default function PostComposer({ onCreated }) {
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setShowImageInput(!showImageInput)}
+                onClick={() => fileInputRef.current?.click()}
                 className={`p-2 rounded-full transition-colors flex items-center gap-2 text-sm font-medium ${
-                  showImageInput
+                  imageFile
                     ? "bg-zinc-800 text-white"
                     : "text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
                 }`}
               >
-                <ImageIcon size={20} /> <span className="hidden sm:inline">Image</span>
+                {imageFile ? <Check size={20} /> : <ImageIcon size={20} />}
+                <span className="hidden sm:inline">
+                  {imageFile ? "Image chosen" : "Image"}
+                </span>
               </button>
             </div>
             <Button

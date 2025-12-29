@@ -103,7 +103,9 @@ export default function PostDetail() {
   const authorName = author?.name ?? "Unknown";
   const authorUsername = getUsername(author);
   const imageUrl = post?.image_url ?? post?.image;
-  const content = post?.content ?? post?.body_html ?? post?.title ?? "";
+  const title = post?.title ?? "";
+  const bodyHtml = post?.body_html ?? "";
+  const bodyText = post?.body_md ?? post?.content ?? "";
   const isNews = post?.category === "news" || post?.type === "news";
 
   const formattedDate = useMemo(() => {
@@ -283,17 +285,18 @@ export default function PostDetail() {
               News
             </span>
           ) : null}
-          {content ? (
-            post?.body_html && !post?.content ? (
-              <div
-                className="text-white text-xl leading-relaxed whitespace-pre-wrap mb-6"
-                dangerouslySetInnerHTML={{ __html: post.body_html }}
-              />
-            ) : (
-              <p className="text-white text-xl leading-relaxed whitespace-pre-wrap mb-6">
-                {content}
-              </p>
-            )
+          {title ? (
+            <h2 className="text-2xl font-bold text-white mb-4">{title}</h2>
+          ) : null}
+          {bodyHtml ? (
+            <div
+              className="text-white text-xl leading-relaxed whitespace-pre-wrap mb-6"
+              dangerouslySetInnerHTML={{ __html: bodyHtml }}
+            />
+          ) : bodyText ? (
+            <p className="text-white text-xl leading-relaxed whitespace-pre-wrap mb-6">
+              {bodyText}
+            </p>
           ) : null}
           {imageUrl ? (
             <div className="mb-8 rounded-2xl overflow-hidden border border-zinc-800 bg-black shadow-lg">

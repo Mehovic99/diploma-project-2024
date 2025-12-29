@@ -20,6 +20,7 @@ class PostResource extends JsonResource
             'type' => $this->type,
             'title' => $this->title,
             'slug' => $this->slug,
+            'body_md' => $this->body_md,
             'body_html' => $this->body_html,
             'link_url' => $this->link_url,
             'image_url' => $this->image_path ? Storage::disk('public')->url($this->image_path) : null,

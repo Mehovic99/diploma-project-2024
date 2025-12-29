@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Calendar, MapPin } from "lucide-react";
+import { ArrowLeft, Calendar, Edit3, MapPin } from "lucide-react";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth.jsx";
 import { getUsername } from "../lib/userUtils";
@@ -20,6 +20,7 @@ export default function Profile() {
   const { user, bootstrapMe } = useAuth();
   const isSelf = id === "me" || (user && String(user.id) === id);
   const isOnboarding = isSelf && searchParams.get("setup") === "1";
+  const isEditing = isSelf && searchParams.get("edit") === "1";
 
   const [profileUser, setProfileUser] = useState(null);
   const [followingUsers, setFollowingUsers] = useState([]);
@@ -403,6 +404,20 @@ export default function Profile() {
     );
   }
 
+  if (isEditing) {
+    if (!user) {
+      return <Loading message="Loading profile..." />;
+    }
+
+    return (
+      <ProfileEditor
+        user={user}
+        onSave={handleProfileSave}
+        onCancel={() => navigate("/profile/me", { replace: true })}
+      />
+    );
+  }
+
   return (
     <div className="max-w-3xl mx-auto px-0 sm:px-4 py-4 sm:py-8 animate-in slide-in-from-right-4 duration-300">
       <Link
@@ -422,7 +437,16 @@ export default function Profile() {
             <div className="p-1 bg-zinc-900 rounded-full">
               <Avatar name={profileUser?.name ?? "User"} size="xl" src={profileUser?.avatar_url} />
             </div>
-            {!isSelf ? (
+            {isSelf ? (
+              <button
+                type="button"
+                onClick={() => navigate("/profile/me?edit=1")}
+                className="p-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-full border border-zinc-700 transition-colors"
+                title="Edit profile"
+              >
+                <Edit3 size={18} />
+              </button>
+            ) : (
               <Button
                 onClick={handleToggleFollow}
                 disabled={followBusy || !profileUser?.id}
@@ -430,7 +454,7 @@ export default function Profile() {
               >
                 {isFollowing ? "Following" : "Follow"}
               </Button>
-            ) : null}
+            )}
           </div>
 
           <div className="mb-6">
