@@ -32,7 +32,7 @@ class PostRepository implements PostRepositoryInterface
             ->where('status', 'published')
             ->orderByDesc('published_at')
             ->orderByDesc('created_at')
-            ->with('user')
+            ->with(['user', 'newsSource'])
             ->paginate($perPage);
     }
 

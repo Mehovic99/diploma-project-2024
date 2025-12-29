@@ -100,8 +100,9 @@ export default function PostDetail() {
   }, []);
 
   const author = post?.author ?? {};
-  const authorName = author?.name ?? "Unknown";
-  const authorUsername = getUsername(author);
+  const newsSource = post?.news_source ?? null;
+  const authorName = newsSource?.name ?? author?.name ?? "Unknown";
+  const authorUsername = newsSource?.slug ?? getUsername(author);
   const imageUrl = post?.image_url ?? post?.image;
   const title = post?.title ?? "";
   const bodyHtml = post?.body_html ?? "";
