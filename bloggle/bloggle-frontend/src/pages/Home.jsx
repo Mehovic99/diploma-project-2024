@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth.jsx";
@@ -7,12 +7,15 @@ import FeedList from "../components/FeedList.jsx";
 import PostComposer from "../components/PostComposer.jsx";
 import Loading from "../components/Loading.jsx";
 import ErrorState from "../components/ErrorState.jsx";
+import Toast from "../components/Toast.jsx";
 
 export default function Home() {
   const { user, token } = useAuth();
   const navigate = useNavigate();
   const { items, setItems, loading, error, reload } = useFeed("/api/posts");
   const [voteError, setVoteError] = useState("");
+  const [toast, setToast] = useState("");
+  const toastTimeoutRef = useRef(null);
   const voteQueueRef = useRef(new Map());
   const voteInFlightRef = useRef(new Set());
 
@@ -20,6 +23,22 @@ export default function Home() {
     () => items.filter((post) => post.type !== "news"),
     [items]
   );
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const showToast = useCallback((message) => {
+    setToast(message);
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    toastTimeoutRef.current = setTimeout(() => setToast(""), 2000);
+  }, []);
 
   const handleCreated = (created) => {
     if (!created) return;
@@ -49,6 +68,8 @@ export default function Home() {
     try {
       await api(`/api/posts/${post.slug}`, { method: "DELETE" });
       setItems((prev) => prev.filter((entry) => entry.id !== post.id));
+      await reload();
+      showToast("Post deleted.");
     } catch (err) {
       throw err;
     }
@@ -165,6 +186,7 @@ export default function Home() {
           onDelete={handleDeletePost}
         />
       ) : null}
+      <Toast message={toast} />
     </main>
   );
 }

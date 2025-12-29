@@ -11,6 +11,7 @@ import FeedList from "../components/FeedList.jsx";
 import Loading from "../components/Loading.jsx";
 import ErrorState from "../components/ErrorState.jsx";
 import ProfileEditor from "../components/ProfileEditor.jsx";
+import Toast from "../components/Toast.jsx";
 
 export default function Profile() {
   const { id } = useParams();
@@ -37,6 +38,8 @@ export default function Profile() {
   const [followBusy, setFollowBusy] = useState(false);
   const [followError, setFollowError] = useState("");
   const [voteError, setVoteError] = useState("");
+  const [toast, setToast] = useState("");
+  const toastTimeoutRef = useRef(null);
   const voteQueueRef = useRef(new Map());
   const voteInFlightRef = useRef(new Set());
 
@@ -145,6 +148,22 @@ export default function Profile() {
   const location = profileUser?.location || "Location not set";
   const joined = profileUser?.joined || "Joined recently";
 
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const showToast = useCallback((message) => {
+    setToast(message);
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    toastTimeoutRef.current = setTimeout(() => setToast(""), 2000);
+  }, []);
+
   const handleUpload = async (event) => {
     event.preventDefault();
     if (!file || uploading) return;
@@ -252,6 +271,9 @@ export default function Profile() {
       await api(`/api/posts/${post.slug}`, { method: "DELETE" });
       setFeedPosts((prev) => prev.filter((entry) => entry.id !== post.id));
       setFollowingFeed((prev) => prev.filter((entry) => entry.id !== post.id));
+      await reloadFeed();
+      await reloadFollowing();
+      showToast("Post deleted.");
     } catch (err) {
       throw err;
     }
@@ -529,6 +551,7 @@ export default function Profile() {
           </div>
         )}
       </div>
+      <Toast message={toast} />
     </div>
   );
 }
