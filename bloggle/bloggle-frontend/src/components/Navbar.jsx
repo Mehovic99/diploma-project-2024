@@ -1,25 +1,35 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { LogOut, Newspaper, RefreshCw, User } from "lucide-react";
 import { useAuth } from "../lib/auth.jsx";
 import { getUsername } from "../lib/userUtils";
 import Avatar from "./Avatar.jsx";
+import Toast from "./Toast.jsx";
 import smallLogo from "../resources/Images/small-logo.png";
 
 export default function Navbar({ onRefresh, isRefreshing = false }) {
   const { user, token, logout, initializing } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [toast, setToast] = useState("");
+  const toastTimeoutRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
 
   const showTabs = location.pathname === "/" || location.pathname.startsWith("/news");
   const isAuthed = Boolean(user && token && !initializing);
+  const searchParams = new URLSearchParams(location.search);
+  const isSetup = searchParams.get("setup") === "1";
+  const blockNav = isSetup && location.pathname.startsWith("/profile");
 
   const tabBase = "px-5 py-1.5 rounded-full text-sm font-medium transition-all";
   const tabActive = "bg-zinc-800 text-white shadow-sm ring-1 ring-zinc-700";
   const tabInactive = "text-zinc-500 hover:text-zinc-300";
 
   const handleProfile = () => {
+    if (blockNav) {
+      showToast("Setup Unfinished");
+      return;
+    }
     if (!user) return;
     setIsMenuOpen(false);
     navigate(`/profile/${user.id ?? "me"}`);
@@ -31,18 +41,48 @@ export default function Navbar({ onRefresh, isRefreshing = false }) {
     navigate("/", { replace: false });
   };
 
+  const showToast = (message) => {
+    setToast(message);
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    toastTimeoutRef.current = setTimeout(() => setToast(""), 2000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const username = getUsername(user);
 
   return (
     <nav className="sticky top-0 z-50 bg-black/80 backdrop-blur-md border-b border-zinc-800">
       <div className="max-w-5xl mx-auto px-4 h-16 flex items-start justify-between">
-        <NavLink to="/" className="flex items-center gap-3 cursor-pointer group">
-          <img
-            src={smallLogo}
-            alt="Bloggle"
-            className="h-20 w-auto block group-hover:scale-105 transition-transform"
-          />
-        </NavLink>
+        {blockNav ? (
+          <button
+            type="button"
+            onClick={() => showToast("Setup Unfinished")}
+            className="flex items-center gap-3 cursor-pointer group"
+          >
+            <img
+              src={smallLogo}
+              alt="Bloggle"
+              className="h-20 w-auto block group-hover:scale-105 transition-transform"
+            />
+          </button>
+        ) : (
+          <NavLink to="/" className="flex items-center gap-3 cursor-pointer group">
+            <img
+              src={smallLogo}
+              alt="Bloggle"
+              className="h-20 w-auto block group-hover:scale-105 transition-transform"
+            />
+          </NavLink>
+        )}
 
         {showTabs ? (
           <div className="flex items-center gap-3 self-center">
@@ -53,6 +93,12 @@ export default function Navbar({ onRefresh, isRefreshing = false }) {
                 className={({ isActive }) =>
                   `${tabBase} ${isActive ? tabActive : tabInactive}`
                 }
+                onClick={(event) => {
+                  if (blockNav) {
+                    event.preventDefault();
+                    showToast("Setup Unfinished");
+                  }
+                }}
               >
                 Global
               </NavLink>
@@ -61,6 +107,12 @@ export default function Navbar({ onRefresh, isRefreshing = false }) {
                 className={({ isActive }) =>
                   `${tabBase} ${isActive ? tabActive : tabInactive}`
                 }
+                onClick={(event) => {
+                  if (blockNav) {
+                    event.preventDefault();
+                    showToast("Setup Unfinished");
+                  }
+                }}
               >
                 <div className="flex items-center gap-2">
                   <Newspaper size={14} /> News
@@ -69,11 +121,17 @@ export default function Navbar({ onRefresh, isRefreshing = false }) {
             </div>
             <button
               type="button"
-              onClick={onRefresh ?? undefined}
-              disabled={!onRefresh}
+              onClick={() => {
+                if (blockNav) {
+                  showToast("Setup Unfinished");
+                  return;
+                }
+                onRefresh?.();
+              }}
+              disabled={!onRefresh || blockNav}
               className={`p-2 rounded-full text-zinc-500 hover:text-white hover:bg-zinc-800 transition-all ${
                 isRefreshing ? "animate-spin text-white" : ""
-              } ${!onRefresh ? "opacity-50 cursor-not-allowed" : ""}`}
+              } ${!onRefresh || blockNav ? "opacity-50 cursor-not-allowed" : ""}`}
               title="Refresh Feed"
             >
               <RefreshCw size={16} />
@@ -130,6 +188,7 @@ export default function Navbar({ onRefresh, isRefreshing = false }) {
           )}
         </div>
       </div>
+      <Toast message={toast} />
     </nav>
   );
 }

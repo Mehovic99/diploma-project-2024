@@ -7,7 +7,6 @@ import { getUsername } from "../lib/userUtils";
 import useFeed from "../lib/hooks/useFeed";
 import Avatar from "../components/Avatar.jsx";
 import Button from "../components/Button.jsx";
-import ImageCropModal from "../components/ImageCropModal.jsx";
 import FeedList from "../components/FeedList.jsx";
 import Loading from "../components/Loading.jsx";
 import ErrorState from "../components/ErrorState.jsx";
@@ -32,12 +31,6 @@ export default function Profile() {
 
   const [activeTab, setActiveTab] = useState("posts");
 
-  const [file, setFile] = useState(null);
-  const [pendingAvatar, setPendingAvatar] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState("");
-  const [uploadSuccess, setUploadSuccess] = useState("");
-  const fileInputRef = useRef(null);
 
   const [followBusy, setFollowBusy] = useState(false);
   const [followError, setFollowError] = useState("");
@@ -168,30 +161,6 @@ export default function Profile() {
     toastTimeoutRef.current = setTimeout(() => setToast(""), 2000);
   }, []);
 
-  const handleUpload = async (event) => {
-    event.preventDefault();
-    if (!file || uploading) return;
-
-    setUploading(true);
-    setUploadError("");
-    setUploadSuccess("");
-
-    try {
-      const formData = new FormData();
-      formData.append("avatar", file);
-      await api("/api/users/me/avatar", {
-        method: "POST",
-        body: formData,
-      });
-      await bootstrapMe();
-      setUploadSuccess("Avatar updated.");
-      setFile(null);
-    } catch (err) {
-      setUploadError(err?.data?.message || err.message || "Upload failed.");
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const handleProfileSave = async ({ name, bio, avatarFile }) => {
     const updates = {};
@@ -494,33 +463,6 @@ export default function Profile() {
       {followError ? <ErrorState message={followError} /> : null}
       {voteError ? <ErrorState message={voteError} /> : null}
 
-      {isSelf ? (
-        <form
-          onSubmit={handleUpload}
-          className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-6"
-        >
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              onChange={(event) => {
-                const selected = event.target.files?.[0];
-                if (!selected) return;
-                setPendingAvatar(selected);
-              }}
-              className="block w-full text-sm text-zinc-200"
-            />
-            <Button type="submit" disabled={!file || uploading} className="px-6">
-              {uploading ? "Uploading..." : "Upload avatar"}
-            </Button>
-          </div>
-          {uploadError ? <p className="text-sm text-red-400 mt-3">{uploadError}</p> : null}
-          {uploadSuccess ? (
-            <p className="text-sm text-emerald-400 mt-3">{uploadSuccess}</p>
-          ) : null}
-        </form>
-      ) : null}
 
       <div className="flex border-b border-zinc-800 mb-6 sticky top-16 bg-black z-10 mx-4 sm:mx-0">
         <button
@@ -544,25 +486,6 @@ export default function Profile() {
           Following Feed
         </button>
       </div>
-      {pendingAvatar ? (
-        <ImageCropModal
-          file={pendingAvatar}
-          aspect={1}
-          circularCrop
-          onCancel={() => {
-            setPendingAvatar(null);
-            if (fileInputRef.current) {
-              fileInputRef.current.value = "";
-            }
-          }}
-          onCropped={(croppedFile) => {
-            setFile(croppedFile);
-            setPendingAvatar(null);
-            setUploadError("");
-            setUploadSuccess("Image ready to upload.");
-          }}
-        />
-      ) : null}
 
       <div className="space-y-4">
         {activeTab === "posts" ? (

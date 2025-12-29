@@ -94,6 +94,10 @@ export default function ProfileEditor({
                 const selected = event.target.files?.[0];
                 if (!selected) return;
                 setPendingFile(selected);
+                event.target.value = "";
+              }}
+              onClick={(event) => {
+                event.target.value = "";
               }}
               className="hidden"
             />
