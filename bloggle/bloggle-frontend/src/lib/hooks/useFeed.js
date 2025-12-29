@@ -6,8 +6,11 @@ export default function useFeed(path) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (options = {}) => {
+    const { silent = false } = options;
+    if (!silent) {
+      setLoading(true);
+    }
     setError("");
     try {
       const data = await api(path);
@@ -16,7 +19,9 @@ export default function useFeed(path) {
     } catch (err) {
       setError(err?.data?.message || err.message || "Failed to load feed.");
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, [path]);
 

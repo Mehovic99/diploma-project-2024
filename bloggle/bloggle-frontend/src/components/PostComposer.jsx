@@ -81,7 +81,18 @@ export default function PostComposer({ onCreated }) {
         body: formData,
       });
 
-      const created = data?.data ?? data;
+      let created = data?.data ?? data;
+      if (created && !created.author && user) {
+        created = {
+          ...created,
+          author: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            avatar_url: user.avatar_url ?? null,
+          },
+        };
+      }
       onCreated?.(created);
       resetForm();
     } catch (err) {

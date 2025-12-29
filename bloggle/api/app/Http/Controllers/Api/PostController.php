@@ -81,6 +81,7 @@ class PostController extends Controller
         unset($validatedData['image']);
 
         $post = $this->postRepository->createForUser($user, $validatedData);
+        $post->load('user');
 
         return (new PostResource($post))
             ->response()

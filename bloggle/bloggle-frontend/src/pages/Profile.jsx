@@ -271,8 +271,16 @@ export default function Profile() {
       await api(`/api/posts/${post.slug}`, { method: "DELETE" });
       setFeedPosts((prev) => prev.filter((entry) => entry.id !== post.id));
       setFollowingFeed((prev) => prev.filter((entry) => entry.id !== post.id));
-      await reloadFeed();
-      await reloadFollowing();
+      try {
+        await reloadFeed({ silent: true });
+      } catch {
+        // ignore refresh errors after delete
+      }
+      try {
+        await reloadFollowing({ silent: true });
+      } catch {
+        // ignore refresh errors after delete
+      }
       showToast("Post deleted.");
     } catch (err) {
       throw err;

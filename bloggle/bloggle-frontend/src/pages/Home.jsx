@@ -68,7 +68,11 @@ export default function Home() {
     try {
       await api(`/api/posts/${post.slug}`, { method: "DELETE" });
       setItems((prev) => prev.filter((entry) => entry.id !== post.id));
-      await reload();
+      try {
+        await reload({ silent: true });
+      } catch {
+        // ignore refresh errors after delete
+      }
       showToast("Post deleted.");
     } catch (err) {
       throw err;
