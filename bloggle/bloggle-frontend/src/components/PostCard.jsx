@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowBigDown,
   ArrowBigUp,
@@ -7,6 +8,7 @@ import {
 } from "lucide-react";
 import Avatar from "./Avatar.jsx";
 import { getUsername } from "../lib/userUtils";
+import { copyText } from "../lib/clipboard";
 
 export default function PostCard({
   post,
@@ -37,6 +39,16 @@ export default function PostCard({
   const score =
     typeof post.score === "number" ? post.score : Number(likes) - Number(dislikes);
   const userVote = typeof post.user_vote === "number" ? post.user_vote : 0;
+  const [toast, setToast] = useState("");
+  const toastTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
   const commentsCount =
     post.comments?.length ??
     post.comments_count ??
@@ -52,6 +64,23 @@ export default function PostCard({
   const handleOpenDetail = (event) => {
     event?.stopPropagation();
     onClick?.();
+  };
+
+  const handleShare = async (event) => {
+    event?.stopPropagation();
+    const url = post?.slug ? `${window.location.origin}/posts/${post.slug}` : window.location.href;
+
+    try {
+      const copied = await copyText(url);
+      setToast(copied ? "Link copied." : "Unable to copy link.");
+    } catch {
+      setToast("Unable to copy link.");
+    }
+
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    toastTimeoutRef.current = setTimeout(() => setToast(""), 2000);
   };
 
   return (
@@ -166,12 +195,20 @@ export default function PostCard({
               <MessageCircle size={18} />
               <span className="text-sm font-bold">{commentsCount}</span>
             </button>
-            <button className="flex items-center gap-2 px-3 py-1.5 hover:bg-zinc-800 hover:text-white rounded-full transition-colors ml-auto">
+            <button
+              onClick={handleShare}
+              className="flex items-center gap-2 px-3 py-1.5 hover:bg-zinc-800 hover:text-white rounded-full transition-colors ml-auto"
+            >
               <Share2 size={18} />
             </button>
           </div>
         </div>
       </div>
+      {toast ? (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-black text-white text-sm px-4 py-2 rounded-full border border-zinc-800 shadow-lg">
+          {toast}
+        </div>
+      ) : null}
     </div>
   );
 }

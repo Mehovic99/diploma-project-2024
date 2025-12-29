@@ -10,6 +10,7 @@ import {
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth.jsx";
 import { getUsername } from "../lib/userUtils";
+import { copyText } from "../lib/clipboard";
 import Avatar from "../components/Avatar.jsx";
 import Button from "../components/Button.jsx";
 import Loading from "../components/Loading.jsx";
@@ -30,6 +31,8 @@ export default function PostDetail() {
   const voteQueueRef = useRef([]);
   const voteInFlightRef = useRef(false);
   const [userVote, setUserVote] = useState(0);
+  const [toast, setToast] = useState("");
+  const toastTimeoutRef = useRef(null);
 
   const reloadPost = useCallback(async () => {
     if (!slug) return;
@@ -88,6 +91,14 @@ export default function PostDetail() {
     setUserVote(typeof post.user_vote === "number" ? post.user_vote : 0);
   }, [post]);
 
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const author = post?.author ?? {};
   const authorName = author?.name ?? "Unknown";
   const authorUsername = getUsername(author);
@@ -114,6 +125,22 @@ export default function PostDetail() {
     } else {
       navigate("/");
     }
+  };
+
+  const handleShare = async () => {
+    const url = post?.slug ? `${window.location.origin}/posts/${post.slug}` : window.location.href;
+
+    try {
+      const copied = await copyText(url);
+      setToast(copied ? "Link copied." : "Unable to copy link.");
+    } catch {
+      setToast("Unable to copy link.");
+    }
+
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    toastTimeoutRef.current = setTimeout(() => setToast(""), 2000);
   };
 
   const handleCommentSubmit = async (event) => {
@@ -332,7 +359,7 @@ export default function PostDetail() {
                   />
                 </button>
               </div>
-              <Button variant="ghost">
+              <Button variant="ghost" onClick={handleShare}>
                 <Share2 size={24} />
               </Button>
             </div>
@@ -389,6 +416,11 @@ export default function PostDetail() {
           </div>
         </div>
       </div>
+      {toast ? (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-black text-white text-sm px-4 py-2 rounded-full border border-zinc-800 shadow-lg">
+          {toast}
+        </div>
+      ) : null}
     </div>
   );
 }
