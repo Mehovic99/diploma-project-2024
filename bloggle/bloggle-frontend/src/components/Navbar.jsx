@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { LogOut, Newspaper, User } from "lucide-react";
+import { LogOut, Newspaper, RefreshCw, User } from "lucide-react";
 import { useAuth } from "../lib/auth.jsx";
 import { getUsername } from "../lib/userUtils";
 import Avatar from "./Avatar.jsx";
 
-export default function Navbar() {
+export default function Navbar({ onRefresh, isRefreshing = false }) {
   const { user, token, logout, initializing } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
@@ -45,26 +45,39 @@ export default function Navbar() {
         </NavLink>
 
         {showTabs ? (
-          <div className="flex gap-1 bg-zinc-900/50 p-1 rounded-full border border-zinc-800">
-            <NavLink
-              to="/"
-              end
-              className={({ isActive }) =>
-                `${tabBase} ${isActive ? tabActive : tabInactive}`
-              }
+          <div className="flex items-center gap-3">
+            <div className="flex gap-1 bg-zinc-900/50 p-1 rounded-full border border-zinc-800">
+              <NavLink
+                to="/"
+                end
+                className={({ isActive }) =>
+                  `${tabBase} ${isActive ? tabActive : tabInactive}`
+                }
+              >
+                Global
+              </NavLink>
+              <NavLink
+                to="/news"
+                className={({ isActive }) =>
+                  `${tabBase} ${isActive ? tabActive : tabInactive}`
+                }
+              >
+                <div className="flex items-center gap-2">
+                  <Newspaper size={14} /> News
+                </div>
+              </NavLink>
+            </div>
+            <button
+              type="button"
+              onClick={onRefresh ?? undefined}
+              disabled={!onRefresh}
+              className={`p-2 rounded-full text-zinc-500 hover:text-white hover:bg-zinc-800 transition-all ${
+                isRefreshing ? "animate-spin text-white" : ""
+              } ${!onRefresh ? "opacity-50 cursor-not-allowed" : ""}`}
+              title="Refresh Feed"
             >
-              Global
-            </NavLink>
-            <NavLink
-              to="/news"
-              className={({ isActive }) =>
-                `${tabBase} ${isActive ? tabActive : tabInactive}`
-              }
-            >
-              <div className="flex items-center gap-2">
-                <Newspaper size={14} /> News
-              </div>
-            </NavLink>
+              <RefreshCw size={16} />
+            </button>
           </div>
         ) : null}
 

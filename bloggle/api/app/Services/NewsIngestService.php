@@ -103,7 +103,7 @@ class NewsIngestService
     }
 
     /**
-     * @return array<int, array{title: string, url: string, published_at: Carbon|null}>
+     * @return array<int, array{title: string, url: string, published_at: Carbon|null, body_html: string|null, image_url: string|null}>
      */
     private function parseRss(string $rssBody, int $maxItems): array
     {
@@ -123,6 +123,23 @@ class NewsIngestService
             $title = trim((string) $item->title);
             $link = trim((string) $item->link);
             $publishedAt = $this->parseDate((string) $item->pubDate);
+            $description = trim((string) $item->description);
+
+            $contentNode = $item->children('content', true);
+            $encoded = $contentNode && isset($contentNode->encoded)
+                ? trim((string) $contentNode->encoded)
+                : '';
+
+            $bodyHtml = $encoded !== '' ? $encoded : ($description !== '' ? $description : null);
+            $imageUrl = $this->extractImageFromRss($item);
+
+            if (!$imageUrl && $bodyHtml) {
+                $imageUrl = $this->extractImageFromHtml($bodyHtml);
+            }
+
+            if ($imageUrl && $bodyHtml) {
+                $bodyHtml = $this->stripFirstImageTag($bodyHtml);
+            }
 
             if ($title === '' || $link === '') {
                 continue;
@@ -132,6 +149,8 @@ class NewsIngestService
                 'title' => $title,
                 'url' => $link,
                 'published_at' => $publishedAt,
+                'body_html' => $bodyHtml,
+                'image_url' => $imageUrl,
             ];
         }
 
@@ -294,7 +313,7 @@ class NewsIngestService
     }
 
     /**
-     * @param array{title: string, url: string, published_at: Carbon|null} $article
+     * @param array{title: string, url: string, published_at: Carbon|null, body_html: string|null, image_url: string|null} $article
      */
     private function storePost(NewsSource $newsSource, array $article): Post
     {
@@ -302,8 +321,9 @@ class NewsIngestService
             'type' => 'news',
             'title' => $article['title'],
             'slug' => $this->generateSlug($article['title']),
-            'body_html' => null,
+            'body_html' => $article['body_html'] ?? null,
             'link_url' => $article['url'],
+            'image_path' => $article['image_url'] ?? null,
             'status' => 'published',
             'published_at' => $article['published_at'],
         ]);
@@ -312,6 +332,60 @@ class NewsIngestService
         $post->save();
 
         return $post;
+    }
+
+    private function extractImageFromRss(\SimpleXMLElement $item): ?string
+    {
+        $media = $item->children('media', true);
+
+        if ($media && isset($media->content)) {
+            foreach ($media->content as $content) {
+                $attributes = $content->attributes();
+                if (isset($attributes['url'])) {
+                    $url = trim((string) $attributes['url']);
+                    if ($url !== '') {
+                        return $url;
+                    }
+                }
+            }
+        }
+
+        if ($media && isset($media->thumbnail)) {
+            $attributes = $media->thumbnail->attributes();
+            if (isset($attributes['url'])) {
+                $url = trim((string) $attributes['url']);
+                if ($url !== '') {
+                    return $url;
+                }
+            }
+        }
+
+        if (isset($item->enclosure)) {
+            $attributes = $item->enclosure->attributes();
+            if (isset($attributes['url'])) {
+                $url = trim((string) $attributes['url']);
+                if ($url !== '') {
+                    return $url;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function extractImageFromHtml(string $html): ?string
+    {
+        if (preg_match('/<img[^>]+src=["\']([^"\']+)["\']/i', $html, $matches)) {
+            $url = trim($matches[1]);
+            return $url !== '' ? $url : null;
+        }
+
+        return null;
+    }
+
+    private function stripFirstImageTag(string $html): string
+    {
+        return preg_replace('/<img[^>]*>/i', '', $html, 1) ?? $html;
     }
 
     private function generateSlug(string $title): string

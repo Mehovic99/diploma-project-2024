@@ -16,6 +16,7 @@ Route::get('/posts', [PostController::class, 'index']);
 Route::get('/posts/{slug}', [PostController::class, 'show']);
 Route::get('/posts/{slug}/comments', [CommentController::class, 'index']);
 Route::get('/news', [NewsController::class, 'index']);
+Route::post('/news/refresh', [NewsController::class, 'refresh']);
 Route::post('/auth/register', [AuthApiController::class, 'register']);
 Route::post('/auth/login', [AuthApiController::class, 'login']);
 Route::post('/auth/lookup', [AuthApiController::class, 'lookup']);

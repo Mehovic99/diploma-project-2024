@@ -1,17 +1,22 @@
-import { useCallback, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth.jsx";
 import useFeed from "../lib/hooks/useFeed";
 import FeedList from "../components/FeedList.jsx";
 import Loading from "../components/Loading.jsx";
 import ErrorState from "../components/ErrorState.jsx";
+import Toast from "../components/Toast.jsx";
 
 export default function News() {
   const navigate = useNavigate();
   const { token } = useAuth();
+  const outletContext = useOutletContext() || {};
+  const { setRefreshHandler } = outletContext;
   const { items, setItems, loading, error, reload } = useFeed("/api/news");
   const [voteError, setVoteError] = useState("");
+  const [toast, setToast] = useState("");
+  const toastTimeoutRef = useRef(null);
   const voteQueueRef = useRef(new Map());
   const voteInFlightRef = useRef(new Set());
 
@@ -24,6 +29,51 @@ export default function News() {
     if (!post?.slug) return;
     navigate(`/posts/${post.slug}`);
   };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const showToast = useCallback((message) => {
+    setToast(message);
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    toastTimeoutRef.current = setTimeout(() => setToast(""), 2000);
+  }, []);
+
+  const handleRefresh = useCallback(async () => {
+    try {
+      const data = await api("/api/news/refresh", {
+        method: "POST",
+        body: { limit: 10 },
+      });
+      const created = Number(data?.created ?? 0);
+      showToast(created > 0 ? `Added ${created} news items.` : "No new news yet.");
+      await reload({ silent: true });
+    } catch (err) {
+      if (err?.status === 429) {
+        const retry = err?.data?.retry_after;
+        showToast(
+          retry
+            ? `Refresh locked. Try again in ${retry}s.`
+            : err?.data?.message || "Refresh locked."
+        );
+        return;
+      }
+      showToast(err?.data?.message || err.message || "Failed to refresh news.");
+    }
+  }, [reload, showToast]);
+
+  useEffect(() => {
+    if (!setRefreshHandler) return undefined;
+    setRefreshHandler(() => handleRefresh);
+    return () => setRefreshHandler(null);
+  }, [handleRefresh, setRefreshHandler]);
 
   const processVoteQueue = useCallback(
     async function runQueue(postId) {
@@ -133,6 +183,7 @@ export default function News() {
           onInteraction={handleInteraction}
         />
       ) : null}
+      <Toast message={toast} />
     </main>
   );
 }

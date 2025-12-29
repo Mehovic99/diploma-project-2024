@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth.jsx";
 import useFeed from "../lib/hooks/useFeed";
@@ -12,6 +12,8 @@ import Toast from "../components/Toast.jsx";
 export default function Home() {
   const { user, token } = useAuth();
   const navigate = useNavigate();
+  const outletContext = useOutletContext() || {};
+  const { setRefreshHandler } = outletContext;
   const { items, setItems, loading, error, reload } = useFeed("/api/posts");
   const [voteError, setVoteError] = useState("");
   const [toast, setToast] = useState("");
@@ -39,6 +41,20 @@ export default function Home() {
     }
     toastTimeoutRef.current = setTimeout(() => setToast(""), 2000);
   }, []);
+
+  const handleRefresh = useCallback(async () => {
+    try {
+      await reload({ silent: true });
+    } catch {
+      // ignore refresh errors
+    }
+  }, [reload]);
+
+  useEffect(() => {
+    if (!setRefreshHandler) return undefined;
+    setRefreshHandler(() => handleRefresh);
+    return () => setRefreshHandler(null);
+  }, [handleRefresh, setRefreshHandler]);
 
   const handleCreated = (created) => {
     if (!created) return;

@@ -15,6 +15,15 @@ class PostResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $imageUrl = null;
+
+        if ($this->image_path) {
+            $imageUrl = str_starts_with($this->image_path, 'http://')
+                || str_starts_with($this->image_path, 'https://')
+                ? $this->image_path
+                : Storage::disk('public')->url($this->image_path);
+        }
+
         return [
             'id' => $this->id,
             'type' => $this->type,
@@ -23,7 +32,7 @@ class PostResource extends JsonResource
             'body_md' => $this->body_md,
             'body_html' => $this->body_html,
             'link_url' => $this->link_url,
-            'image_url' => $this->image_path ? Storage::disk('public')->url($this->image_path) : null,
+            'image_url' => $imageUrl,
             'status' => $this->status,
             'score' => $this->score,
             'comments_count' => $this->comments_count,
