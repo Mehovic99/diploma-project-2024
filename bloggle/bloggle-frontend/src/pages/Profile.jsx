@@ -7,6 +7,7 @@ import { getUsername } from "../lib/userUtils";
 import useFeed from "../lib/hooks/useFeed";
 import Avatar from "../components/Avatar.jsx";
 import Button from "../components/Button.jsx";
+import ImageCropModal from "../components/ImageCropModal.jsx";
 import FeedList from "../components/FeedList.jsx";
 import Loading from "../components/Loading.jsx";
 import ErrorState from "../components/ErrorState.jsx";
@@ -32,9 +33,11 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState("posts");
 
   const [file, setFile] = useState(null);
+  const [pendingAvatar, setPendingAvatar] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [uploadSuccess, setUploadSuccess] = useState("");
+  const fileInputRef = useRef(null);
 
   const [followBusy, setFollowBusy] = useState(false);
   const [followError, setFollowError] = useState("");
@@ -498,9 +501,14 @@ export default function Profile() {
         >
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <input
+              ref={fileInputRef}
               type="file"
               accept="image/png,image/jpeg,image/webp"
-              onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+              onChange={(event) => {
+                const selected = event.target.files?.[0];
+                if (!selected) return;
+                setPendingAvatar(selected);
+              }}
               className="block w-full text-sm text-zinc-200"
             />
             <Button type="submit" disabled={!file || uploading} className="px-6">
@@ -536,6 +544,25 @@ export default function Profile() {
           Following Feed
         </button>
       </div>
+      {pendingAvatar ? (
+        <ImageCropModal
+          file={pendingAvatar}
+          aspect={1}
+          circularCrop
+          onCancel={() => {
+            setPendingAvatar(null);
+            if (fileInputRef.current) {
+              fileInputRef.current.value = "";
+            }
+          }}
+          onCropped={(croppedFile) => {
+            setFile(croppedFile);
+            setPendingAvatar(null);
+            setUploadError("");
+            setUploadSuccess("Image ready to upload.");
+          }}
+        />
+      ) : null}
 
       <div className="space-y-4">
         {activeTab === "posts" ? (

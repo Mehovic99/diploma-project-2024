@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Camera } from "lucide-react";
 import Avatar from "./Avatar.jsx";
 import Button from "./Button.jsx";
+import ImageCropModal from "./ImageCropModal.jsx";
 
 export default function ProfileEditor({
   user,
@@ -12,14 +13,10 @@ export default function ProfileEditor({
   const [name, setName] = useState(user?.name ?? "");
   const [bio, setBio] = useState(user?.bio ?? "");
   const [avatarFile, setAvatarFile] = useState(null);
-  const [imageMeta, setImageMeta] = useState(null);
-  const [crop, setCrop] = useState({ x: 0, y: 0, zoom: 1 });
+  const [pendingFile, setPendingFile] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const fileInputRef = useRef(null);
-  const cropRef = useRef(null);
-  const dragRef = useRef(null);
-  const cropSize = 240;
 
   useEffect(() => {
     setName(user?.name ?? "");
@@ -36,144 +33,10 @@ export default function ProfileEditor({
     return () => URL.revokeObjectURL(previewUrl);
   }, [previewUrl]);
 
-  useEffect(() => {
-    if (!previewUrl) {
-      setImageMeta(null);
-      setCrop({ x: 0, y: 0, zoom: 1 });
-      return;
-    }
-
-    const image = new Image();
-    image.onload = () => {
-      const meta = {
-        width: image.naturalWidth,
-        height: image.naturalHeight,
-      };
-      setImageMeta(meta);
-
-      const baseScale = Math.max(cropSize / meta.width, cropSize / meta.height);
-      const renderW = meta.width * baseScale;
-      const renderH = meta.height * baseScale;
-      setCrop({
-        x: (cropSize - renderW) / 2,
-        y: (cropSize - renderH) / 2,
-        zoom: 1,
-      });
-    };
-    image.src = previewUrl;
-  }, [previewUrl]);
-
   const avatarSrc = previewUrl || user?.avatar_url || null;
 
   const handlePickAvatar = () => {
     fileInputRef.current?.click();
-  };
-
-  const clampCrop = (next) => {
-    if (!imageMeta) return next;
-    const baseScale = Math.max(
-      cropSize / imageMeta.width,
-      cropSize / imageMeta.height
-    );
-    const scale = baseScale * next.zoom;
-    const renderW = imageMeta.width * scale;
-    const renderH = imageMeta.height * scale;
-    const minX = cropSize - renderW;
-    const minY = cropSize - renderH;
-
-    return {
-      ...next,
-      x: Math.min(0, Math.max(minX, next.x)),
-      y: Math.min(0, Math.max(minY, next.y)),
-    };
-  };
-
-  const handlePointerDown = (event) => {
-    if (!imageMeta) return;
-    event.preventDefault();
-    cropRef.current?.setPointerCapture(event.pointerId);
-    dragRef.current = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      originX: crop.x,
-      originY: crop.y,
-    };
-  };
-
-  const handlePointerMove = (event) => {
-    if (!dragRef.current || dragRef.current.pointerId !== event.pointerId) return;
-    const dx = event.clientX - dragRef.current.startX;
-    const dy = event.clientY - dragRef.current.startY;
-
-    setCrop((prev) =>
-      clampCrop({
-        ...prev,
-        x: dragRef.current.originX + dx,
-        y: dragRef.current.originY + dy,
-      })
-    );
-  };
-
-  const handlePointerUp = (event) => {
-    if (dragRef.current?.pointerId === event.pointerId) {
-      dragRef.current = null;
-    }
-  };
-
-  const getCroppedAvatarFile = async () => {
-    if (!avatarFile || !previewUrl || !imageMeta) return avatarFile;
-
-    const image = new Image();
-    image.src = previewUrl;
-    await new Promise((resolve, reject) => {
-      image.onload = resolve;
-      image.onerror = reject;
-    });
-
-    const baseScale = Math.max(
-      cropSize / imageMeta.width,
-      cropSize / imageMeta.height
-    );
-    const scale = baseScale * crop.zoom;
-    const cropX = Math.max(0, -crop.x / scale);
-    const cropY = Math.max(0, -crop.y / scale);
-    const cropSizeOriginal = cropSize / scale;
-
-    const outputSize = 512;
-    const canvas = document.createElement("canvas");
-    canvas.width = outputSize;
-    canvas.height = outputSize;
-    const ctx = canvas.getContext("2d");
-
-    if (!ctx) return avatarFile;
-
-    ctx.drawImage(
-      image,
-      cropX,
-      cropY,
-      cropSizeOriginal,
-      cropSizeOriginal,
-      0,
-      0,
-      outputSize,
-      outputSize
-    );
-
-    const supported = ["image/png", "image/jpeg", "image/webp"];
-    const mime = supported.includes(avatarFile.type)
-      ? avatarFile.type
-      : "image/jpeg";
-
-    const blob = await new Promise((resolve) =>
-      canvas.toBlob(resolve, mime, 0.9)
-    );
-
-    if (!blob) return avatarFile;
-
-    const extension = mime.split("/")[1] || "jpg";
-    const filename = avatarFile.name || `avatar.${extension}`;
-    return new File([blob], filename, { type: mime });
   };
 
   const handleSubmit = async (event) => {
@@ -183,11 +46,10 @@ export default function ProfileEditor({
     setError("");
 
     try {
-      const croppedAvatar = await getCroppedAvatarFile();
       await onSave?.({
         name: name.trim(),
         bio: bio.trim(),
-        avatarFile: croppedAvatar,
+        avatarFile,
       });
     } catch (err) {
       setError(err?.data?.message || err.message || "Unable to update profile.");
@@ -228,60 +90,14 @@ export default function ProfileEditor({
               ref={fileInputRef}
               type="file"
               accept="image/png,image/jpeg,image/webp"
-              onChange={(event) => setAvatarFile(event.target.files?.[0] ?? null)}
+              onChange={(event) => {
+                const selected = event.target.files?.[0];
+                if (!selected) return;
+                setPendingFile(selected);
+              }}
               className="hidden"
             />
             <p className="text-xs text-zinc-500">Tap to change avatar</p>
-            {avatarFile && imageMeta ? (
-              <div className="w-full flex flex-col items-center gap-3">
-                <div
-                  ref={cropRef}
-                  className="relative rounded-2xl border border-zinc-800 bg-black overflow-hidden"
-                  style={{ width: cropSize, height: cropSize }}
-                  onPointerDown={handlePointerDown}
-                  onPointerMove={handlePointerMove}
-                  onPointerUp={handlePointerUp}
-                  onPointerLeave={handlePointerUp}
-                >
-                  <img
-                    src={previewUrl}
-                    alt="Crop preview"
-                    className="absolute top-0 left-0 select-none touch-none"
-                    style={{
-                      width: imageMeta.width,
-                      height: imageMeta.height,
-                      transform: `translate(${crop.x}px, ${crop.y}px) scale(${
-                        Math.max(
-                          cropSize / imageMeta.width,
-                          cropSize / imageMeta.height
-                        ) * crop.zoom
-                      })`,
-                      transformOrigin: "top left",
-                    }}
-                    draggable={false}
-                  />
-                </div>
-                <div className="w-full">
-                  <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-2">
-                    Zoom
-                  </label>
-                  <input
-                    type="range"
-                    min="1"
-                    max="2.5"
-                    step="0.01"
-                    value={crop.zoom}
-                    onChange={(event) =>
-                      setCrop((prev) =>
-                        clampCrop({ ...prev, zoom: Number(event.target.value) })
-                      )
-                    }
-                    className="w-full"
-                  />
-                </div>
-                <p className="text-xs text-zinc-500">Drag to reposition</p>
-              </div>
-            ) : null}
           </div>
 
           <div className="space-y-4">
@@ -338,6 +154,23 @@ export default function ProfileEditor({
           </div>
         </form>
       </div>
+      {pendingFile ? (
+        <ImageCropModal
+          file={pendingFile}
+          aspect={1}
+          circularCrop
+          onCancel={() => {
+            setPendingFile(null);
+            if (fileInputRef.current) {
+              fileInputRef.current.value = "";
+            }
+          }}
+          onCropped={(croppedFile) => {
+            setAvatarFile(croppedFile);
+            setPendingFile(null);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
