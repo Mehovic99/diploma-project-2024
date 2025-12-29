@@ -53,7 +53,7 @@ export default function Register() {
 
       <div className="w-full max-w-md bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 rounded-3xl p-8 shadow-2xl relative z-10 transition-all duration-300">
         <div className="text-center mb-8">
-          <img src={logoTrans} alt="Bloggle" className="h-16 w-auto mx-auto mb-4" />
+          <img src={logoTrans} alt="Bloggle" className="h-72 w-auto mx-auto mb-4" />
           <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Create account</h1>
           <p className="text-zinc-500">Join Bloggle in a few seconds.</p>
         </div>

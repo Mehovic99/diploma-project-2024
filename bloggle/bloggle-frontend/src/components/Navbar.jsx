@@ -40,7 +40,7 @@ export default function Navbar({ onRefresh, isRefreshing = false }) {
           <img
             src={smallLogo}
             alt="Bloggle"
-            className="h-9 w-auto group-hover:scale-105 transition-transform"
+            className="h-20 w-auto block group-hover:scale-105 transition-transform"
           />
         </NavLink>
 

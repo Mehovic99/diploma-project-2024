@@ -106,7 +106,7 @@ export default function Login() {
 
       <div className="w-full max-w-md bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 rounded-3xl p-8 shadow-2xl relative z-10 transition-all duration-300">
         <div className="text-center mb-8">
-          <img src={logoTrans} alt="Bloggle" className="h-16 w-auto mx-auto mb-4" />
+          <img src={logoTrans} alt="Bloggle" className="h-72 w-auto mx-auto mb-4" />
           <h1 className="sr-only">Bloggle</h1>
           <p className="text-zinc-500">Welcome back.</p>
         </div>
@@ -240,7 +240,7 @@ export default function Login() {
           </a>
           <a
             href={facebook}
-            className="px-4 py-3 rounded-full bg-zinc-800 text-white font-bold text-center border border-zinc-700 flex items-center justify-center"
+            className="px-4 py-3 rounded-full bg-black text-white font-bold text-center border border-zinc-700 flex items-center justify-center"
             aria-label="Continue with Facebook"
           >
             <img src={logoFacebook} alt="Facebook" className="h-5 w-auto" />
