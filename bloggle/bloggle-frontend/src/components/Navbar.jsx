@@ -4,6 +4,7 @@ import { LogOut, Newspaper, RefreshCw, User } from "lucide-react";
 import { useAuth } from "../lib/auth.jsx";
 import { getUsername } from "../lib/userUtils";
 import Avatar from "./Avatar.jsx";
+import smallLogo from "../resources/Images/small-logo.png";
 
 export default function Navbar({ onRefresh, isRefreshing = false }) {
   const { user, token, logout, initializing } = useAuth();
@@ -36,12 +37,11 @@ export default function Navbar({ onRefresh, isRefreshing = false }) {
     <nav className="sticky top-0 z-50 bg-black/80 backdrop-blur-md border-b border-zinc-800">
       <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
         <NavLink to="/" className="flex items-center gap-3 cursor-pointer group">
-          <div className="w-9 h-9 bg-zinc-100 rounded-lg flex items-center justify-center text-black font-black text-xl group-hover:scale-105 transition-transform">
-            B
-          </div>
-          <span className="text-xl font-bold tracking-tight text-white hidden sm:block">
-            Bloggle
-          </span>
+          <img
+            src={smallLogo}
+            alt="Bloggle"
+            className="h-9 w-auto group-hover:scale-105 transition-transform"
+          />
         </NavLink>
 
         {showTabs ? (

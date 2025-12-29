@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth.jsx";
 import Button from "../components/Button.jsx";
+import logoTrans from "../resources/Images/logo-trans.png";
 
 export default function Register() {
   const { user, token, initializing, loginWithToken } = useAuth();
@@ -52,9 +53,7 @@ export default function Register() {
 
       <div className="w-full max-w-md bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 rounded-3xl p-8 shadow-2xl relative z-10 transition-all duration-300">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-zinc-800 rounded-2xl mx-auto mb-4 flex items-center justify-center border border-zinc-700 shadow-lg">
-            <span className="text-2xl font-black text-white">B</span>
-          </div>
+          <img src={logoTrans} alt="Bloggle" className="h-16 w-auto mx-auto mb-4" />
           <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Create account</h1>
           <p className="text-zinc-500">Join Bloggle in a few seconds.</p>
         </div>

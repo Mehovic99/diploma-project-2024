@@ -4,6 +4,9 @@ import { ArrowLeft } from "lucide-react";
 import { api, API_BASE } from "../lib/api";
 import { useAuth } from "../lib/auth.jsx";
 import Button from "../components/Button.jsx";
+import logoTrans from "../resources/Images/logo-trans.png";
+import logoGoogle from "../resources/Images/logo-google.png";
+import logoFacebook from "../resources/Images/logo-facebook.png";
 
 export default function Login() {
   const { user, token, initializing, loginWithToken } = useAuth();
@@ -103,10 +106,8 @@ export default function Login() {
 
       <div className="w-full max-w-md bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 rounded-3xl p-8 shadow-2xl relative z-10 transition-all duration-300">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-zinc-800 rounded-2xl mx-auto mb-4 flex items-center justify-center border border-zinc-700 shadow-lg">
-            <span className="text-2xl font-black text-white">B</span>
-          </div>
-          <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Bloggle</h1>
+          <img src={logoTrans} alt="Bloggle" className="h-16 w-auto mx-auto mb-4" />
+          <h1 className="sr-only">Bloggle</h1>
           <p className="text-zinc-500">Welcome back.</p>
         </div>
 
@@ -232,15 +233,17 @@ export default function Login() {
         <div className="flex flex-col gap-3">
           <a
             href={google}
-            className="px-4 py-3 rounded-full bg-zinc-100 text-black font-bold text-center shadow-lg shadow-zinc-900/50"
+            className="px-4 py-3 rounded-full bg-zinc-100 text-black font-bold text-center shadow-lg shadow-zinc-900/50 flex items-center justify-center"
+            aria-label="Continue with Google"
           >
-            Continue with Google
+            <img src={logoGoogle} alt="Google" className="h-5 w-auto" />
           </a>
           <a
             href={facebook}
-            className="px-4 py-3 rounded-full bg-zinc-800 text-white font-bold text-center border border-zinc-700"
+            className="px-4 py-3 rounded-full bg-zinc-800 text-white font-bold text-center border border-zinc-700 flex items-center justify-center"
+            aria-label="Continue with Facebook"
           >
-            Continue with Facebook
+            <img src={logoFacebook} alt="Facebook" className="h-5 w-auto" />
           </a>
         </div>
 
